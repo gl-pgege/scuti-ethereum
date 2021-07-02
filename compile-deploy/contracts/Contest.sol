@@ -1,4 +1,4 @@
-pragma solidity >=0.4.21 <0.7.0;
+pragma solidity 0.6.12;
 
 contract Contest {
     address public owner;
@@ -26,15 +26,11 @@ contract Contest {
     
     // allowing developers to submit their score in order to determine if they're the current leaders
     function contractSubmission(uint score) public returns(bool){
-        require(contractStarted && owner != msg.sender && contractAmount >= minimumContractAmount);
-        if(score >= leaderScore){
-            return false;
+        require(contractStarted && owner != msg.sender && contractAmount >= expectedContractAmount);
+        if(score <= leaderScore){
+            leaderScore = score;
+            leaderAddress = msg.sender;   
         }
-        
-        leaderScore = score;
-        leaderAddress = msg.sender;
-        
-        return true;
     }
     
     function beginContract() public {
@@ -48,13 +44,12 @@ contract Contest {
     }
     
     function addMoreContractFunds() public payable {
-        // require(msg.value >= minimumContractAmount);
         contractAmount += msg.value;
     }
     
     // only winner can withdraw funds
     function winnerWithdrawal() public {
-        require(!contractStarted && leaderAddress == msg.sender && contractAmount >= minimumContractAmount);
+        require(!contractStarted && leaderAddress == msg.sender && contractAmount >= expectedContractAmount);
         
         if(msg.sender.send(contractAmount)){
             contractAmount -= contractAmount;

@@ -18,9 +18,11 @@ function App(){
       try {
         // Get network provider and web3 instance.
         const web3_instance = await getWeb3();
-  
+
+        // console.log(web3_instance.eth.getAccounts())
         // Use web3 to get the user's accounts.
         const initial_accounts = await web3_instance.eth.getAccounts();
+        console.log(initial_accounts);
   
         // Get the contract instance.
         const networkId = await web3_instance.eth.net.getId();

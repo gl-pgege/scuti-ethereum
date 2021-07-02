@@ -1,0 +1,5 @@
+0x6Fd28C185f96bc0C27CD24937002963c548e3E72
+before
+SyntaxError: Unexpected token o in JSON at position 1
+    at JSON.parse (<anonymous>)
+    at /home/paul/Desktop/ethereum-course/deploy.js:30:59
