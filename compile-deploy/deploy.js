@@ -38,7 +38,8 @@ const web3 = new Web3(ganache.provider());
             value: 1000
         });
 
-        console.log(contract);
+        const response = await contract.methods['getLeaderScore']().call();
+        console.log(response);
     } catch(error){
         console.log(error);
     }
