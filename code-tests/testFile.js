@@ -6,31 +6,56 @@ const ganache = require("ganache-cli");
 const _ = require("lodash");
 var expect = require('chai').expect
 
+const web3 = new Web3(ganache.provider());
+const GAS = 6700000;
+const GASPRICE = '97000000000';
+
 const testJsonObj = [
     {
         functionName: "add",
         arguments: [1, 2, 3],
         expectedOutput: 6,
-        valueToCheck: "answer"
+        valueToCheck: "answer",
+        accountIndex: 1,
+        negativeTest: false,
+        errorMsg: ""
     },
     {
         functionName: "subtract",
         arguments: [10, 2],
         expectedOutput: 8,
-        valueToCheck: "answer"
+        valueToCheck: "answer",
+        accountIndex: 0,
+        negativeTest: false,
+        errorMsg: ""
     },
     {
         functionName: "multiply",
         arguments: [1, 2, 3, 4],
         expectedOutput: 24,
-        valueToCheck: "answer"
+        valueToCheck: "answer",
+        accountIndex: 0,
+        negativeTest: false,
+        errorMsg: ""  
+    },
+    {
+        functionName: "divide",
+        arguments: [4, 0],
+        expectedOutput: 2,
+        valueToCheck: "answer",
+        accountIndex: 0,
+        negativeTest: true,
+        errorMsg: "VM Exception while processing transaction: revert"
     },
     {
         functionName: "divide",
         arguments: [4, 2],
         expectedOutput: 2,
-        valueToCheck: "answer"
-    }
+        valueToCheck: "answer",
+        accountIndex: 0,
+        negativeTest: false,
+        errorMsg: ""
+    },
 ]
 
 function compileCode(contractName){
@@ -67,56 +92,99 @@ function compileCode(contractName){
 
 }
 
+async function calculateGasPriceForTxn(account, transaction, gasDetails = {}){
+    const initialAccountBalance = await web3.eth.getBalance(account);
+    const txnReturnValue = await transaction.send({
+        from: account,
+        ...gasDetails
+    });
+    const finalAccountBalance = await web3.eth.getBalance(account);
+    const gasUsed = initialAccountBalance - finalAccountBalance;
+
+    console.log("gasUsed", gasUsed);
+
+    return {
+        gasUsed,
+        txnReturnValue
+    };
+}
+
+const expectThrowsAsync = async (method, errorMessage) => {
+    let error = null
+    try {
+        await method()
+    }
+    catch (err) {
+        error = err
+    }
+
+    if (errorMessage) {
+        try{
+            console.log("Pass - ", expect(error.message).to.equal(errorMessage))
+        } catch(error){
+            console.log("Fail - ", error);
+        }
+    }
+}
+
 async function deployAndTestContract(contractName){
     // needs to adjust to contract name
     const {abi, evm} = compileCode(contractName);
 
-    const web3 = new Web3(ganache.provider());
+    const userAccounts = await web3.eth.getAccounts();
 
-    const user_accounts = await web3.eth.getAccounts();
-
-    console.log("Account Balance", await web3.eth.getBalance(user_accounts[0]));
+    let gasSpent = 0;
 
     try{
         
-        // deploy smart contract
-        const contract = await new web3.eth.Contract(abi).deploy({
+        let transaction = await new web3.eth.Contract(abi).deploy({
             data: `0x${evm.bytecode.object}`,
-        }).send({
-            from: user_accounts[0],
-            gas: 4700000,
-            gasPrice: '30000000000',
-        });
+        })
 
-
-        console.log("Account Balance", await web3.eth.getBalance(user_accounts[0]));
+        let contractCreationGasDetails = {
+            gas: GAS,
+            gasPrice: GASPRICE
+        }
+        // deploy smart contract
+        let {gasUsed, txnReturnValue: contract} = await calculateGasPriceForTxn(userAccounts[0], transaction, contractCreationGasDetails);
+        gasSpent += gasUsed;        
 
         for(let i = 0; i < testJsonObj.length; i++){
-            let methodName = testJsonObj[i].functionName;
-            let funcArguments = testJsonObj[i].arguments;
-            let expectedOutput = testJsonObj[i].expectedOutput;
-            let valueToCheck = testJsonObj[i].valueToCheck;
+            const {
+                functionName, 
+                arguments, 
+                expectedOutput, 
+                valueToCheck, 
+                accountIndex,
+                negativeTest,
+                errorMsg
+            } = testJsonObj[i];
 
-            await contract.methods[methodName](...funcArguments).send({ from: user_accounts[0] });
-            let actualOutput = await contract.methods[valueToCheck]().call()
+            transaction = contract.methods[functionName](...arguments);
 
-            // LOOK INTO HOW TO ASSERT HERE
-            // if(assert.equal(expectedOutput, actualOutput)){
-            //     console.log("pass");
-            // } else {
-            //     console.log("fail");
-            // }
-
-            try{
-                expect(expectedOutput).to.equal(parseInt(actualOutput));
-                console.log("pass")
-            } catch(error){
-                console.log("fail", error);
+            if(negativeTest){
+                await expectThrowsAsync((async function(){
+                    return await transaction.send({
+                        from: userAccounts[accountIndex]
+                    });
+                }), errorMsg);
+            } else {
+                let { gasUsed } = await calculateGasPriceForTxn(userAccounts[accountIndex], transaction)
+                gasSpent += gasUsed;
+                
+                let actualOutput = await contract.methods[valueToCheck]().call()
+    
+                try{
+                    console.log("Pass - ", expect(expectedOutput).to.equal(parseInt(actualOutput)))
+                } catch(error){
+                    console.log("Fail - ", error);
+                }
             }
-        
-
-            console.log("Account Balance", await web3.eth.getBalance(user_accounts[0]));
         }
+
+        // const finalUserAccountBalance = await web3.eth.getBalance(userAccounts[0]);
+
+        console.log("gas spent", gasSpent);
     } catch(error){
         console.log(error);
     }
