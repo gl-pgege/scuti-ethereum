@@ -65,26 +65,80 @@ const compileCode = async() => {
   }
 };
 
-// compileCode().then(gas => console.log(gas));
 
-
-describe("Constructor", function(){
+describe("Testing constructor", function(){
   let contract;
   let accounts;
   beforeEach(async function() {
     contract = await compileCode();
     accounts = await web3.eth.getAccounts();
   })
-  it("Checking owner address, leaderAddress should be the zero address, leaderScore should be 100, contractAmount should equal 1000", async function(){
-    console.log(contract);
-    assert(1, 1);
-    // assert(accounts[0] == owner, "Owner address is correct");
-    // assert(leaderAddress == address(0), "Leader addres is equal to the zero address");
-    // assert(leaderScore == 100, "leaderScore is equal to 100");
+  it("Checking owner", async function() {
+    const ownerAddress = await contract.methods.owner;
+    assert(accounts[0], ownerAddress, "account[0] not equal to the owner address.")
+  })
+  it("leaderScore is 100", async function(){
+    const leaderScore = await contract.methods.leaderScore().call();
+    assert(leaderScore, 100, "leaderScore should be 100.");
     // assert(contractAmount == 1000, "contractAmount is equal to 1000");
+  })
+  it("Current leader is address(0)", async function() {
+    const leaderAddress = await contract.methods.leaderAddress;
+    const addressZero = await contract.methods.addressZero;
+    assert(leaderAddress, addressZero, "Leader address should be null");
+  })
+  it("Contract amount is 1000", async function() {
+    const contractAmount = await contract.methods.contractAmount;
+    assert(contractAmount, 1000, "Contract amount should equal 1000.");
   })
 });
 
+describe("Only owner of contract should be able to call beginContract() function", function() {
+  let contract;
+  let accounts;
+  beforeEach(async function() {
+    contract = await compileCode();
+    accounts = await web3.eth.getAccounts();
+  })
+  it("The owner is able to call beginContract()", async function() {
+    const ownerAddress = accounts[0];
+    const endTime = await contract.methods.currentTime().call();
+    const beginContract = await contract.methods.beginContract(endTime).send({from: ownerAddress, value: 1000});
+    const hardcodedEndTime = 1625858389;
+    assert(hardcodedEndTime, endTime);
+  })
+  it("The contract is funded.", async function() {
+    const isFunded = await contract.methods.contractFunded;
+    assert(isFunded, true);
+  })
+})
+
+describe("Submissions can only be submitted prior to end time", function() {
+  it("The owner is able to call beginContract()", async function() {
+    const ownerAddress = accounts[0];
+    const submissionAddress = accounts[1];
+    const endTime = 1825859393; 
+    const beginContract = await contract.methods.beginContract(endTime).send({from: ownerAddress, value: 1000});
+    const contractSubmit = await contract.methods.contractSubmission(50).send({from: submissionAddress});
+    //assert
+  })
+})
+/*
+describe("Non owner cannot call beginContract()", function() {
+  let contract;
+  let accounts;
+  beforeEach(async function() {
+    contract = await compileCode();
+    accounts = await web3.eth.getAccounts();
+  })
+  it("The owner is able to call beginContract()", async function() {
+    const nonOwner = accounts[1];
+    const endTime = await contract.methods.currentTime().call();
+    const beginContract = await contract.methods.beginContract(endTime).send({from: nonOwner, value: 1000});
+    const hardcodedEndTime = 1625858389;
+    assert(hardcodedEndTime, endTime, "Should fail because only owner can call beginContract()");
+  })
+})
 
 
 
