@@ -55,6 +55,10 @@ contract Contest {
         leaderScore = 100;
     }
     
+    function getOwner() public view returns(address) {
+        return msg.sender;
+    }
+    
     function currentTime() public view returns(uint){
         return block.timestamp;
     }

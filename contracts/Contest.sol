@@ -1,4 +1,4 @@
-pragma solidity 0.8.6;
+pragma solidity 0.6.12;
 
 contract Contest {
     address public owner;
@@ -7,9 +7,9 @@ contract Contest {
     
     uint public leaderScore;
     address public leaderAddress;
-    
+
     // for contract to be started you need to have contract amount > 0
-    bool public contractFunded;
+    bool public contractFunded = false;
     uint public contractAmount;
 
     // Modifiers
@@ -54,11 +54,38 @@ contract Contest {
         contractAmount = _contractAmount;
         leaderScore = 100;
     }
+
+    // added these functions July 13 
+    function getOwner() public view returns(address) {
+        return owner;
+    }
+
+    function getLeaderAddress() public view returns(address) {
+        return leaderAddress;
+    }
     
+    function getAddressZero() public view returns(address) {
+        return address(0);
+    }
+
     function currentTime() public view returns(uint){
         return block.timestamp;
     }
+
+    function getContractAmount() public view returns(uint) {
+        return contractAmount;
+    }
+
+    function isFunded() public view returns(bool) {
+        return contractFunded;
+    }
+
+    function getLeaderScore() public view returns(uint) {
+        return leaderScore;
+    }
     
+    //////////////////
+
     // allowing developers to submit their score in order to determine if they're the current leaders
     function contractSubmission(uint score) public contractIsFunded notOwner beforeEndTime{
         if(score < leaderScore){
