@@ -51,7 +51,7 @@ const mathematicTestJsonObj = [
     },
 ]
 
-// TODO: Find a standard/way to specify that an address should be used as an argument
+// TODO: Move json to separate JSON file
 const contestTestJsonObject = [
     {
         functionName: "beginContract",
@@ -125,7 +125,7 @@ const contestTestJsonObject = [
     // },
 ]
 
-// TODO: Decide if we want to make this part of the test cases
+// TODO: Decide if we want to make this part of the test cases (contract owner provides this)
 const mathematicsConstructorDetails = {
     payableAmount: 0,
     arguments: [],
@@ -135,9 +135,8 @@ const mathematicsConstructorDetails = {
 
 const contestConstructorDetails = {
     payableAmount: 0,
-    // TODO: Find a standard/way to specify that an address should be used as an argument
     arguments: ['[contract_owner]', 1000],
-    accountsNeeded: ['contract_owner', 'developer'],
+    accountsNeeded: ['contract_owner', 'developer', 'not_developwe'],
     deploymentAccount: 'contract_owner'    
 }
 

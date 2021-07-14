@@ -19,6 +19,7 @@ function extractFileNameFromPath(path){
     return path.replace(/^.*[\\\/]/, '');
 }
 
+// TODO: Add ability to change compiler versions based on the contract specified compiler versions
 function compileContract(contractPath){
 
     const contractFileName = extractFileNameFromPath(contractPath);
@@ -166,7 +167,7 @@ function replaceAddressPlaceholdersWithAccounts(funcArguments, availableAccounts
             const parsedArgument = argument.replace('[', '').replace(']', '');
             if(parsedArgument in availableAccounts){
                 parsedFuncArgs.push(availableAccounts[parsedArgument]);
-            } else {
+            } else {contestTestJsonObject
                 // TODO: Create an error object with all error messages you'll need & keep it updated
                 throw new Error("Account does not exist within availableAccounts, please ensure specify an account that exists")
             }
@@ -193,7 +194,6 @@ async function deployContract(contractPath, constructorSettings, accounts){
 
     let transaction = await new web3.eth.Contract(abi).deploy({
         data: `0x${evm.bytecode.object}`,
-        // IF CONSTRUCTOR ACCEPTS ARGUMENTS WE PASS THEM WITH OUR SETTINGS
         arguments: parsedConstructorArguments,
     })
 
@@ -208,7 +208,7 @@ async function deployContract(contractPath, constructorSettings, accounts){
 
 async function testContract(contractPath, constructorSettings, testCases){
 
-    const {accountsNeeded, deploymentAccount} = constructorSettings;
+    const {accountsNeeded} = constructorSettings;
     const userAccounts = await generateAccountsBasedOnRoles(accountsNeeded);
     let testResults = {}
 

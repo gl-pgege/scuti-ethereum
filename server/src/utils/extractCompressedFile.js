@@ -19,10 +19,12 @@ async function extractCompressedFile(downloadedTarFolderPath, repoTestingDirecto
                 testFileLocation = filePath;
             }
     
+            // Build github repo folder structure
             fs.mkdir(dirname, { recursive: true }, (err) => {
                 if (err) throw err;
             });
     
+            // 
             stream.on('data', function(chunk) {
                 chunks[filePath] = chunk;
             });
@@ -36,6 +38,7 @@ async function extractCompressedFile(downloadedTarFolderPath, repoTestingDirecto
     
         extract.on('finish', function() {
     
+            console.log(chunks);
             for (let filePath in chunks) {
                 // skip loop if the property is from prototype
                 if (!chunks.hasOwnProperty(filePath)) continue;

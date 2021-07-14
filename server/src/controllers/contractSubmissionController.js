@@ -7,23 +7,17 @@ const {
     contestConstructorDetails,
     contestTestJsonObject
 } = require("../constants/jsonTestValues");
-const GITHUB_ID = "pgege";
+const { generateGithubDownloadUrl } = require("../utils/url.js");
 
-// TODO: Have the filenames generated automatically
-// const contractName = "styles.css";
-
-function generateGithubDownloadUrl (githubId, repoName, commitId) {
-    const url = `https://api.github.com/repos/${githubId}/${repoName}/tarball/${commitId}`;
-
-    return url;
-}
 
 async function downloadRepo(url){
 
     let compressedRepoPath;
 
-    const authHeader = "token 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";
+    // TODO: Add to environment variable file
+    const authHeader = `token ${process.env.PERSONAL_ACCESS_TOKEN}`;
     const options = {
+        method: "GET",
         headers: {
             Authorization: authHeader
         }
@@ -31,12 +25,14 @@ async function downloadRepo(url){
 
     try{
         const response = await fetch(url, options)
-        
         const data = await response.buffer();
 
+        // TODO: (David) Create the "contracts" folder if it doesn't exist 
+        // (create function that accepts the tar.gz folder name if contracts exists just send back path, otherwise create and send back path)
         compressedRepoPath = path.resolve(__dirname, '..', 'contracts', 'contract.tar.gz');
         
         fs.createWriteStream(compressedRepoPath).write(data);
+
     } catch (error){
         console.log(error);
     }
@@ -50,15 +46,15 @@ async function contractSubmissionController(req, res){
     const { 
         repoName, 
         commitId,
-        contractName,
         pathToTestFile
     } = req.body;
 
     // It's our repository so 
-    const url = generateGithubDownloadUrl(GITHUB_ID, repoName, commitId);
+    const url = generateGithubDownloadUrl(repoName, commitId);
     
     const downloadedTarFolderPath = await downloadRepo(url);
     const repoTestingDirectory = path.dirname(downloadedTarFolderPath);
+    
     let testResults;
 
     if(downloadedTarFolderPath){
@@ -67,15 +63,19 @@ async function contractSubmissionController(req, res){
             const testFileLocation = await extractCompressedFile(downloadedTarFolderPath, repoTestingDirectory, pathToTestFile);
 
             if(testFileLocation){
+                /* 
+                    TODO: contestTestJsonObject - currently is a json object imported from a javascript file, needs to be moved
+                    to a JSON file. This allows us to retrieve contract owner's test cases
+                */
                 testResults = await testContract(testFileLocation, contestConstructorDetails, contestTestJsonObject);
             }
     
-            res.json({
+            res.status(200).json({
                 "results": (testResults)
             })
         } catch (error){
             console.log(error);
-            //TODO - Delete repository if can't add collaborator
+
             res.status(500).json({
                 error: error.message
             })
