@@ -69,7 +69,7 @@ const compileCode = async() => {
   }
 };
 
-
+// todo: change all getters 
 describe("Constructor", function(){
   let contract;
   let accounts;
@@ -78,7 +78,7 @@ describe("Constructor", function(){
     accounts = await web3.eth.getAccounts();
   })
   it("Owner address.", async function() {
-    const ownerAddress = await contract.methods.getOwner().call();
+    const ownerAddress = await contract.methods.owner().call();
     expect(ownerAddress).to.equal(accounts[0]);
   })
   it("leaderScore is initialized to 100", async function(){
@@ -87,12 +87,12 @@ describe("Constructor", function(){
     expect(leaderScore).to.be.a('number');
   })
   it("Current leader is initialized to address(0)", async function() {
-    const leaderAddress = await contract.methods.getLeaderAddress().call();
+    const leaderAddress = await contract.methods.leaderAddress().call();
     const addressZero = await contract.methods.getAddressZero().call();
     expect(leaderAddress).to.equal(addressZero);
   })
   it("Contract amount is initialized to setContractAmount", async function() {
-    const contractAmount = parseInt(await contract.methods.getContractAmount().call());
+    const contractAmount = parseInt(await contract.methods.contractAmount().call());
     expect(contractAmount).to.equal(setContractAmount);
     expect(contractAmount).to.be.a('number');
   })
@@ -107,11 +107,11 @@ describe("Testing the beginContract() function", function(){
     accounts = await web3.eth.getAccounts();
   })
   it("The owner is able to call beginContract(), and must provide the correct contract value [setContractAmount]", async function() {
-    const ownerAddress = await contract.methods.getOwner().call();    // the same as accounts[0]
+    const ownerAddress = await contract.methods.owner().call();    // the same as accounts[0]
     const endTime = await contract.methods.currentTime().call();
     const beginContract = await contract.methods.beginContract(endTime).send({from: ownerAddress, value: setContractAmount});  // changing this fails the test
-    const isFunded = await contract.methods.isFunded().call();
-    const contractValue = parseInt(await contract.methods.getContractAmount().call());
+    const isFunded = await contract.methods.contractFunded().call();
+    const contractValue = parseInt(await contract.methods.contractAmount().call());
     expect(contractValue).to.equal(setContractAmount);    // contract value must be setContractAmount -- fails if the contract value is different than the initialized value (setContractAmount in this case)
     expect(isFunded).to.equal(true);    // isFunded is true only if beginContract() was successfully called
   })
@@ -126,12 +126,12 @@ describe("Testing the beginContract() function", function(){
     const ownerAddress = accounts[0];
     const beginContract = await contract.methods.beginContract().send({from: ownerAddress, value: setContractAmount});
   })
-  it("The contract is funded when we call beginContract(). [isFunded = true]", async function() {
-    const isFunded = await contract.methods.isFunded().call();
+  it("The contract is funded when beginContract() is called", async function() {
+    const isFunded = await contract.methods.contractFunded().call();
     expect(isFunded).to.equal(true);
   })
   it("Contract amount is set to the correct amount when we call beginContract() [setContractAmount].", async function() {
-    const contractValue = parseInt(await contract.methods.getContractAmount().call());
+    const contractValue = parseInt(await contract.methods.contractAmount().call());
     expect(contractValue).to.equal(setContractAmount);
   })
 });
@@ -150,19 +150,19 @@ describe("Testing the contractSubmission() function", function() {
     const nonOwner = accounts[1];   // changing this to accounts[0] will fail the test
     const score = 50;   // lower score
     const contractSubmission = await contract.methods.contractSubmission(score).send({from: nonOwner});
-    const leaderScore = parseInt(await contract.methods.getLeaderScore().call());
+    const leaderScore = parseInt(await contract.methods.leaderScore().call());
     expect(leaderScore).to.equal(score);
-    const leaderAddress = await contract.methods.getLeaderAddress().call();
+    const leaderAddress = await contract.methods.leaderAddress().call();
     expect(leaderAddress).to.equal(nonOwner);
   })
   it("contractSubmission() - only non owner can call and the score is updated if submitted score is below current leaderscore (submitted score is higher, so leaderScore and leaderAddress is NOT updated)", async function() {
     const nonOwner = accounts[1];  
     const score = 105;   // higher score
     const contractSubmission = await contract.methods.contractSubmission(score).send({from: nonOwner});
-    const leaderScore = parseInt(await contract.methods.getLeaderScore().call());
+    const leaderScore = parseInt(await contract.methods.leaderScore().call());
     expect(leaderScore).to.not.equal(score);    // leaderscore should not be updated
     expect(leaderScore).to.equal(100);
-    const leaderAddress = await contract.methods.getLeaderAddress().call();
+    const leaderAddress = await contract.methods.leaderAddress().call();
     expect(leaderAddress).to.not.equal(nonOwner);  // leader address should not be updated
   })
   it("3rd account with lower score submitted should be new leader", async function() {
@@ -174,9 +174,9 @@ describe("Testing the contractSubmission() function", function() {
     //let leaderScore = parseInt(await contract.methods.getLeaderScore().call()); // should = 60 at this point
     const secondScore = 50;
     const secondContractSubmission = await contract.methods.contractSubmission(secondScore).send({from: secondAccount});
-    let leaderScore = parseInt(await contract.methods.getLeaderScore().call()); // should = 50 at this point
+    let leaderScore = parseInt(await contract.methods.leaderScore().call()); // should = 50 at this point
     expect(leaderScore).to.equal(secondScore);    // leaderScore should = 50 (2nd account) and should be new leader
-    const leaderAddress = await contract.methods.getLeaderAddress().call();
+    const leaderAddress = await contract.methods.leaderAddress().call();
     expect(leaderAddress).to.equal(secondAccount);  // leader address should be second accounts
   })
   it("3rd account with higher score submitted should not affect leader", async function() {
@@ -188,9 +188,9 @@ describe("Testing the contractSubmission() function", function() {
     //let leaderScore = parseInt(await contract.methods.getLeaderScore().call()); // should = 60 at this point
     const secondScore = 80;
     const secondContractSubmission = await contract.methods.contractSubmission(secondScore).send({from: secondAccount});
-    let leaderScore = parseInt(await contract.methods.getLeaderScore().call()); // should = 50 at this point
+    let leaderScore = parseInt(await contract.methods.leaderScore().call()); // should = 50 at this point
     expect(leaderScore).to.equal(firstScore);
-    const leaderAddress = await contract.methods.getLeaderAddress().call();
+    const leaderAddress = await contract.methods.leaderAddress().call();
     expect(leaderAddress).to.equal(firstAccount);  // leader address should be second accounts
   })
   it("Owner cannot call contractSubmission()", async function() {
@@ -270,11 +270,11 @@ describe("Testing the winnerWithdrawal() function", function() {
   });
   it("winnerWithdrawal() can only be called after beginContract(), and after the end time", async function(){
     const withdraw = await contract.methods.winnerWithdrawal().send({from: leaderAddress});
-    const contractValue = parseInt(await contract.methods.getContractAmount().call());
+    const contractValue = parseInt(await contract.methods.contractAmount().call());
     expect(contractValue).to.equal(0);
-    expect(await contract.methods.isFunded().call()).to.equal(false);   // contract no longer funded after withdrawal
-    expect(parseInt(await contract.methods.getLeaderScore().call())).to.equal(100); //leader score should be reset to 100
-    expect(await contract.methods.getLeaderAddress().call()).to.equal(await contract.methods.getAddressZero().call());  //leader address is reset to address(0)
+    expect(await contract.methods.contractFunded().call()).to.equal(false);   // contract no longer funded after withdrawal
+    expect(parseInt(await contract.methods.leaderScore().call())).to.equal(100); //leader score should be reset to 100
+    expect(await contract.methods.leaderAddress().call()).to.equal(await contract.methods.getAddressZero().call());  //leader address is reset to address(0)
 
     web3.eth.getBalance(ownerAddress).then(console.log);
     web3.eth.getBalance(leaderAddress).then(console.log);
@@ -283,7 +283,7 @@ describe("Testing the winnerWithdrawal() function", function() {
     expect.fail("Only the leader can withdraw")
     const nonLeaderAddress = accounts[2];
     const withdraw = await contract.methods.winnerWithdrawal().send({from: nonLeaderAddress});
-    const contractValue = parseInt(await contract.methods.getContractAmount().call());
+    const contractValue = parseInt(await contract.methods.contractAmount().call());
   });
 });
 
@@ -310,7 +310,7 @@ describe("Testing the winnerWithdrawal() function", function() {
   it("winnerWithdrawal() cannot be called before the end time", async function(){
     expect.fail("Cannot withdraw before the end time")
     const withdraw = await contract.methods.winnerWithdrawal().send({from: leaderAddress});
-    const contractValue = parseInt(await contract.methods.getContractAmount().call());
+    const contractValue = parseInt(await contract.methods.contractAmount().call());
   });
 });
 
@@ -338,10 +338,10 @@ describe("Testing the ownerWithdrawal() function", function() {
   });
   it("ownerWithdrawal() can only be called by owner, after the end time, with no submissions", async function(){
     const ownerWithdraw = await contract.methods.ownerWithdrawal().send({from: ownerAddress});
-    const contractValue = parseInt(await contract.methods.getContractAmount().call());
+    const contractValue = parseInt(await contract.methods.contractAmount().call());
     expect(contractValue).to.equal(0);
-    expect(await contract.methods.isFunded().call()).to.equal(false);   // contract no longer funded after withdrawal
-    expect(await contract.methods.getLeaderAddress().call()).to.equal(await contract.methods.getAddressZero().call());    // leader address should = zero address
+    expect(await contract.methods.contractFunded().call()).to.equal(false);   // contract no longer funded after withdrawal
+    expect(await contract.methods.leaderAddress().call()).to.equal(await contract.methods.getAddressZero().call());    // leader address should = zero address
     web3.eth.getBalance(ownerAddress).then(console.log);  // balance goes back up
   });
   it("Non-owners cannot call ownerWithdrawal()", async function(){
@@ -373,7 +373,7 @@ describe("Testing the ownerWithdrawal() function (time)", function() {
       done();
     }, 5000);
   });
-  it.only("Owner cannot call ownerWithdrawal() before end time", async function(){
+  it("Owner cannot call ownerWithdrawal() before end time", async function(){
     expect.fail("Owner cannot call ownerWithdrawal() before the end time")
     const ownerWithdraw = await contract.methods.ownerWithdrawal().send({from: ownerAddress});
   });
