@@ -277,7 +277,7 @@ async function testContract(contractPath, constructorSettings, testCases){
 
         return testResults
     } catch(error){
-        console.log(error);
+        // console.log(error);
         throw new Error(error);
     }
 }
