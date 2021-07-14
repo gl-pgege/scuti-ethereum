@@ -2,7 +2,11 @@ const fetch = require("node-fetch");
 const fs = require('fs');
 const path = require('path');
 const extractCompressedFile = require("../utils/extractCompressedFile");
-
+const {testContract} = require("../utils/testHarness");
+const {
+    contestConstructorDetails,
+    contestTestJsonObject
+} = require("../constants/jsonTestValues");
 const GITHUB_ID = "pgege";
 
 // TODO: Have the filenames generated automatically
@@ -30,7 +34,7 @@ async function downloadRepo(url){
         
         const data = await response.buffer();
 
-        compressedRepoPath = path.resolve(__dirname, '..', '..', '..', 'code-tests', 'contracts', 'contract.tar.gz');
+        compressedRepoPath = path.resolve(__dirname, '..', 'contracts', 'contract.tar.gz');
         
         fs.createWriteStream(compressedRepoPath).write(data);
     } catch (error){
@@ -55,6 +59,7 @@ async function contractSubmissionController(req, res){
     
     const downloadedTarFolderPath = await downloadRepo(url);
     const repoTestingDirectory = path.dirname(downloadedTarFolderPath);
+    let testResults;
 
     if(downloadedTarFolderPath){
         try {
@@ -62,11 +67,11 @@ async function contractSubmissionController(req, res){
             const testFileLocation = await extractCompressedFile(downloadedTarFolderPath, repoTestingDirectory, pathToTestFile);
 
             if(testFileLocation){
-                console.log("after", testFileLocation);
+                testResults = await testContract(testFileLocation, contestConstructorDetails, contestTestJsonObject);
             }
     
             res.json({
-                "success": "successfully downloaded"
+                "results": (testResults)
             })
         } catch (error){
             console.log(error);

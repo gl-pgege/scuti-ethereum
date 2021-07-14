@@ -10,9 +10,14 @@
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.19.0",
+    "chai": "^4.3.4",
     "express": "^4.17.1",
+    "ganache-cli": "^6.12.2",
+    "lodash": "^4.17.21",
     "node-fetch": "^2.6.1",
     "nodemon": "^2.0.12",
-    "tar-stream": "^2.2.0"
+    "solc": "^0.6.12",
+    "tar-stream": "^2.2.0",
+    "web3": "^1.4.0"
   }
 }

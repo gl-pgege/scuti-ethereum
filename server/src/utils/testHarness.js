@@ -9,21 +9,22 @@ var expect = require('chai').expect;
 const web3 = new Web3(ganache.provider());
 const GAS = 6700000;
 const GASPRICE = '97000000000';
-const VALUE = 1000;
 
 const transactionTypes = {
     deploy: "DEPLOY",
     functionCall: "FUNCTION_CALL",
 }
 
-function compileCode(contractName){
+function extractFileNameFromPath(path){
+    return path.replace(/^.*[\\\/]/, '');
+}
 
-    const contractFileName = `${contractName}.sol`;
+function compileContract(contractPath){
 
-    // needs to adjust to contract name
-    const inboxPath = path.resolve(__dirname, "contracts", contractFileName);
+    const contractFileName = extractFileNameFromPath(contractPath);
+    const contractName = contractFileName.replace(".sol", "");
         
-    const source = fs.readFileSync(inboxPath, "utf-8");
+    const source = fs.readFileSync(contractPath, "utf-8");
 
     let sources = {}
 
@@ -123,20 +124,25 @@ async function sendAndCalculateGasUsedForTxn(account, transaction, txnType, expl
 }
 
 const expectThrowsAsync = async (method) => {
+
+    let testResult;
+
     let error = null
     try {
         await method()
-    }
-    catch (err) {
+    } catch (err) {
         error = err
     }
 
     
     try{
-        console.log("Pass - ", expect(error.message).to.not.be.empty)
+        testResult = `Pass - ${(expect(error.message).to.not.be.empty)}`;
+        
     } catch(error){
-        console.log("Fail - ", error);
+        testResult = `Fail - ${error}`;
     }
+
+    return testResult;
 }
 
 function isAddress(property){
@@ -173,9 +179,9 @@ function replaceAddressPlaceholdersWithAccounts(funcArguments, availableAccounts
 }
 
 
-async function deployContract(contractName, constructorSettings, accounts){
+async function deployContract(contractPath, constructorSettings, accounts){
     // Contract compilation needs to adjust to contract name
-    const {abi, evm} = compileCode(contractName);
+    const {abi, evm} = compileContract(contractPath);
     const {
         arguments: constructorArguments, 
         payableAmount: constructorPayableAmount,
@@ -200,15 +206,18 @@ async function deployContract(contractName, constructorSettings, accounts){
     }
 }
 
-async function testContract(contractName, constructorSettings, testCases){
+async function testContract(contractPath, constructorSettings, testCases){
 
     const {accountsNeeded, deploymentAccount} = constructorSettings;
     const userAccounts = await generateAccountsBasedOnRoles(accountsNeeded);
+    let testResults = {}
 
     try{
         
-        let {gasUsed, contract: initialContract} = await deployContract(contractName, constructorSettings, userAccounts)
+        let {gasUsed, contract: initialContract} = await deployContract(contractPath, constructorSettings, userAccounts)
         // gasSpent += gasUsed;        
+
+        let testResult;
 
         for(let i = 0; i < testCases.length; i++){
             let contract = initialContract;
@@ -227,7 +236,7 @@ async function testContract(contractName, constructorSettings, testCases){
             const parsedArguments = replaceAddressPlaceholdersWithAccounts(arguments, userAccounts);
 
             if(resetContract){
-                const {gasUsed: newContractGasUse, contract: newContract} = await deployContract(contractName, constructorSettings, userAccounts);
+                const {gasUsed: newContractGasUse, contract: newContract} = await deployContract(contractPath, constructorSettings, userAccounts);
                 gasUsed = newContractGasUse,
                 contract = newContract;
             }
@@ -235,13 +244,15 @@ async function testContract(contractName, constructorSettings, testCases){
             transaction = contract.methods[functionName](...parsedArguments);
 
             if(negativeTest){
-                await expectThrowsAsync(
+                testResult = await expectThrowsAsync(
                     (async function(){
                         return await transaction.send({
                             from: userAccounts[account]
                         });
                     })
                 );
+                const failingProperty = `${functionName}-${i}-failing-test`;
+                testResults[failingProperty] = testResult;
             } else {
                 
                 let { gasUsed } = await sendAndCalculateGasUsedForTxn(userAccounts[account], transaction, transactionTypes.functionCall, false ,payableAmount);
@@ -255,161 +266,22 @@ async function testContract(contractName, constructorSettings, testCases){
             }
 
             try{
-                console.log("Pass - ", expect(expectedOutput).to.equal(actualOutput));
+                testResult = `Pass - ${(expect(expectedOutput).to.equal(actualOutput))}`;
             } catch(error){
-                console.log("Fail - ", error);
+                testResult = `Fail - ${error}`;
             }
+
+            const property = `${functionName}-${i}`;
+            testResults[property] = testResult;
         }
 
-        // console.log("gas spent", gasSpent);
+        return testResults
     } catch(error){
         console.log(error);
+        throw new Error(error);
     }
 }
 
-
-const mathematicTestJsonObj = [
-    {
-        functionName: "add",
-        arguments: [1, 2, 3],
-        expectedOutput: 6,
-        valueToCheck: "answer",
-        account: "user1",
-        negativeTest: false,
-        payableAmount: 0,
-        resetContract: false
-    },
-    {
-        functionName: "subtract",
-        arguments: [10, 2],
-        expectedOutput: 8,
-        valueToCheck: "answer",
-        account: "user1",
-        negativeTest: false,
-        payableAmount: 0,
-        resetContract: false
-    },
-    {
-        functionName: "multiply",
-        arguments: [1, 2, 3, 4],
-        expectedOutput: 24,
-        valueToCheck: "answer",
-        account: "user1",
-        negativeTest: false,
-        payableAmount: 0,
-        resetContract: false 
-    },
-    {
-        functionName: "divide",
-        arguments: [4, 0],
-        expectedOutput: 0,
-        valueToCheck: "answer",
-        account: "user1",
-        negativeTest: true,
-        payableAmount: 0,
-        resetContract: true
-    },
-    {
-        functionName: "divide",
-        arguments: [4, 2],
-        expectedOutput: 2,
-        valueToCheck: "answer",
-        account: "user1",
-        negativeTest: false,
-        payableAmount: 0,
-        resetContract: false
-    },
-]
-
-// TODO: Find a standard/way to specify that an address should be used as an argument
-const contestTestJsonObject = [
-    {
-        functionName: "beginContract",
-        arguments: [1626098243],
-        expectedOutput: true,
-        valueToCheck: "contractFunded",
-        account: "contract_owner",
-        negativeTest: false,
-        payableAmount: 1000,
-        resetContract: false
-    },
-    {
-        functionName: "beginContract",
-        arguments: [1626098243],
-        expectedOutput: false,
-        valueToCheck: "contractFunded",
-        account: "contract_owner",
-        negativeTest: true,
-        payableAmount: 999,
-        resetContract: true
-    },
-    {
-        functionName: "beginContract",
-        arguments: [1626098243],
-        expectedOutput: false,
-        valueToCheck: "contractFunded",
-        account: "developer",
-        negativeTest: true,
-        payableAmount: 1000,
-        resetContract: true
-    },
-    // {
-    //     functionName: "contractSubmission",
-    //     arguments: [50],
-    //     expectedOutput: 50,
-    //     valueToCheck: "leaderScore",
-    //     account: "developer",
-    //     negativeTest: false,
-    //     payableAmount: 0,
-    //     resetContract: false
-    // },
-    // {
-    //     functionName: "contractSubmission",
-    //     arguments: [50],
-    //     expectedOutput: 50,
-    //     valueToCheck: "leaderScore",
-    //     account: "contract_owner",
-    //     negativeTest: true,
-    //     payableAmount: 0,
-    //     resetContract: false
-    // },
-    // {
-    //     functionName: "endContract",
-    //     arguments: [],
-    //     expectedOutput: false,
-    //     valueToCheck: "contractStarted",
-    //     account: "contract_owner",
-    //     negativeTest: false,
-    //     payableAmount: 0,
-    //     resetContract: false
-    // },
-    // {
-    //     functionName: "winnerWithdrawal",
-    //     arguments: [],
-    //     expectedOutput: 0,
-    //     valueToCheck: "contractAmount",
-    //     account: "developer",
-    //     negativeTest: false,
-    //     payableAmount: 0,
-    //     resetContract: false
-    // },
-]
-
-// TODO: Decide if we want to make this part of the test cases
-const mathematicsConstructorDetails = {
-    payableAmount: 0,
-    arguments: [],
-    accountsNeeded: ['user1'],
-    deploymentAccount: 'user1'
+module.exports = {
+    testContract
 }
-
-const contestConstructorDetails = {
-    payableAmount: 0,
-    // TODO: Find a standard/way to specify that an address should be used as an argument
-    arguments: ['[contract_owner]', 1000],
-    accountsNeeded: ['contract_owner', 'developer'],
-    deploymentAccount: 'contract_owner'    
-}
-
-testContract("Contest", contestConstructorDetails, contestTestJsonObject);
-// testContract("Mathematics", mathematicsConstructorDetails, mathematicTestJsonObj);
