@@ -4,8 +4,10 @@ const ethereumJS = require('web3');
 const fs = require('fs');
 const Web3 = require('web3');
 const ganache = require('ganache-cli');
-const assert = require('assert');
-const mocha = require('chai').assert;
+const chai = require('chai')
+, assert = chai.assert
+, expect = chai.expect
+, should = chai.should()
 
 
 // instance of Web3
@@ -43,6 +45,8 @@ const {abi, evm} = contractObject;
 
 const byteCode = '0x' + evm.bytecode.object;    // 0x for hex
 
+const setContractAmount = 1000000000000000;
+
 const compileCode = async() => {
 //(async function() {
   try {
@@ -52,7 +56,7 @@ const compileCode = async() => {
     })
     const contract = await new web3.eth.Contract(abi).deploy({
         data: byteCode,
-        arguments: [accounts[0], 1000]
+        arguments: [accounts[0], setContractAmount]  // this changes
     }).send({
         from: accounts[0], 
         gas: 6700000,
@@ -73,23 +77,24 @@ describe("Constructor", function(){
     contract = await compileCode();
     accounts = await web3.eth.getAccounts();
   })
-  it("The owner address is correct.", async function() {
-    const ownerAddress = await contract.methods.owner;
-    assert(accounts[0], ownerAddress, "account[0] not equal to the owner address.")
+  it("Owner address.", async function() {
+    const ownerAddress = await contract.methods.getOwner().call();
+    expect(ownerAddress).to.equal(accounts[0]);
   })
   it("leaderScore is initialized to 100", async function(){
-    const leaderScore = await contract.methods.leaderScore().call();
-    assert(leaderScore, 100, "leaderScore should be 100.");
-    // assert(contractAmount == 1000, "contractAmount is equal to 1000");
+    const leaderScore = parseInt(await contract.methods.leaderScore().call());
+    expect(leaderScore).to.equal(100);
+    expect(leaderScore).to.be.a('number');
   })
   it("Current leader is initialized to address(0)", async function() {
-    const leaderAddress = await contract.methods.leaderAddress;
-    const addressZero = await contract.methods.addressZero;
-    assert(leaderAddress, addressZero, "Leader address should be null");
+    const leaderAddress = await contract.methods.getLeaderAddress().call();
+    const addressZero = await contract.methods.getAddressZero().call();
+    expect(leaderAddress).to.equal(addressZero);
   })
-  it("Contract amount is initialized to 1000", async function() {
-    const contractAmount = await contract.methods.contractAmount;
-    assert(contractAmount, 1000, "Contract amount should equal 1000.");
+  it("Contract amount is initialized to setContractAmount", async function() {
+    const contractAmount = parseInt(await contract.methods.getContractAmount().call());
+    expect(contractAmount).to.equal(setContractAmount);
+    expect(contractAmount).to.be.a('number');
   })
 });
   
@@ -101,289 +106,317 @@ describe("Testing the beginContract() function", function(){
     contract = await compileCode();
     accounts = await web3.eth.getAccounts();
   })
-  // beginContract()
-  it("The owner is able to call beginContract()", async function() {
-    const ownerAddress = accounts[0];
+  it("The owner is able to call beginContract(), and must provide the correct contract value [setContractAmount]", async function() {
+    const ownerAddress = await contract.methods.getOwner().call();    // the same as accounts[0]
     const endTime = await contract.methods.currentTime().call();
-    const beginContract = await contract.methods.beginContract(endTime).send({from: ownerAddress, value: 1000});
-    const hardcodedEndTime = 1625858389;
-    assert(hardcodedEndTime, endTime);
+    const beginContract = await contract.methods.beginContract(endTime).send({from: ownerAddress, value: setContractAmount});  // changing this fails the test
+    const isFunded = await contract.methods.isFunded().call();
+    const contractValue = parseInt(await contract.methods.getContractAmount().call());
+    expect(contractValue).to.equal(setContractAmount);    // contract value must be setContractAmount -- fails if the contract value is different than the initialized value (setContractAmount in this case)
+    expect(isFunded).to.equal(true);    // isFunded is true only if beginContract() was successfully called
   })
-  it("The owner is able to call beginContract(), but must provide the correct contract value. (value too low)", async function() {
-    const ownerAddress = accounts[0];
-    const endTime = await contract.methods.currentTime().call();
-    const beginContract = await contract.methods.beginContract(endTime).send({from: ownerAddress, value: 999});
-    const hardcodedEndTime = 1625858389;
-    assert.fail("Incorrect contract amount - should be 1000.");
-  })
-  it("The owner is able to call beginContract(), but must provide the correct contract value. (value too high)", async function() {
-    const ownerAddress = accounts[0];
-    const endTime = await contract.methods.currentTime().call();
-    const beginContract = await contract.methods.beginContract(endTime).send({from: ownerAddress, value: 1001});
-    const hardcodedEndTime = 1625858389;
-    assert.fail("Incorrect contract amount - should be 1000.");
-  })
-  // non owner should not be able to call beginContract()
-  it("Anyone else is not able to call beginContract() (with correct contract value).", async function() {
+  it("Anyone else is not able to call beginContract()", async function() {
+    expect.fail("This test fails as only the owner can call beginContract()");
     const nonOwner = accounts[1];
     const endTime = await contract.methods.currentTime().call();
-    const beginContract = await contract.methods.beginContract(endTime).send({from: nonOwner, value: 1000});
-    const hardcodedEndTime = 1625858389;
-    assert.fail("Only the owner is able to call the function.");
-  })
-  it("Anyone else is not able to call beginContract() (with incorrect contract value).", async function() {
-    const nonOwner = accounts[1];
-    const endTime = await contract.methods.currentTime().call();
-    const beginContract = await contract.methods.beginContract(endTime).send({from: nonOwner, value: 900});
-    const hardcodedEndTime = 1625858389;
-    assert.fail("Only the owner is able to call the function.");
+    const beginContract = await contract.methods.beginContract(endTime).send({from: nonOwner, value: setContractAmount});
   })
   it("The owner must provide an end time.", async function() {
+    expect.fail("The owner must provide an end time!");
     const ownerAddress = accounts[0];
-    const beginContract = await contract.methods.beginContract().send({from: ownerAddress, value: 1000});
-    assert.fail("Owner must provide an end time.");
+    const beginContract = await contract.methods.beginContract().send({from: ownerAddress, value: setContractAmount});
   })
-  it("The contract is funded when we call beginContract(). (isFunded = true)", async function() {
-    const isFunded = await contract.methods.contractFunded;
-    assert(isFunded, true);
+  it("The contract is funded when we call beginContract(). [isFunded = true]", async function() {
+    const isFunded = await contract.methods.isFunded().call();
+    expect(isFunded).to.equal(true);
   })
-  it("Contract amount is set to the correct amount when we call beginContract().", async function() {
-    const contractAmount = await contract.methods.contractAmount;
-    assert(contractAmount, 1000)
+  it("Contract amount is set to the correct amount when we call beginContract() [setContractAmount].", async function() {
+    const contractValue = parseInt(await contract.methods.getContractAmount().call());
+    expect(contractValue).to.equal(setContractAmount);
   })
 });
 
-describe("contractSubmission()", function() { 
+describe("Testing the contractSubmission() function", function() { 
   let contract;
   let accounts;
-  before(async function() {
+  beforeEach(async function() {
     contract = await compileCode();
     accounts = await web3.eth.getAccounts();
     const ownerAddress = accounts[0];
-    const endTime = 1726110128; // hard coded end time 
-    const beginContract = await contract.methods.beginContract(endTime).send({from: ownerAddress, value: 1000});
+    const endTime = 1726110128; // hard coded end time in the future
+    const beginContract = await contract.methods.beginContract(endTime).send({from: ownerAddress, value: setContractAmount});
   })
-  it("contractSubmission() - only non owner can call and the score is updated if submitted score is below current leaderscore (submitted score is lower, so leaderScore is updated)", async function() {
-    const nonOwner = accounts[1];
-    const score = 50;
+  it("contractSubmission() - only non owner can call and the score is updated if submitted score is below current leaderscore (submitted score is lower, so leaderScore and leaderAddress is updated)", async function() {
+    const nonOwner = accounts[1];   // changing this to accounts[0] will fail the test
+    const score = 50;   // lower score
     const contractSubmission = await contract.methods.contractSubmission(score).send({from: nonOwner});
-    const leaderScore = await contract.methods.leaderScore;
-    assert(leaderScore, 50);  
-    const leaderAddress = await contract.methods.leaderAddress;
-    assert(leaderAddress, nonOwner);
+    const leaderScore = parseInt(await contract.methods.getLeaderScore().call());
+    expect(leaderScore).to.equal(score);
+    const leaderAddress = await contract.methods.getLeaderAddress().call();
+    expect(leaderAddress).to.equal(nonOwner);
   })
-  it("contractSubmission() - only non owner can call and the score is updated if submitted score is below current leaderscore (submitted score is higher, so leaderScore is not updated)", async function() {
-    const nonOwner = accounts[1];
-    const score = 105;
+  it("contractSubmission() - only non owner can call and the score is updated if submitted score is below current leaderscore (submitted score is higher, so leaderScore and leaderAddress is NOT updated)", async function() {
+    const nonOwner = accounts[1];  
+    const score = 105;   // higher score
     const contractSubmission = await contract.methods.contractSubmission(score).send({from: nonOwner});
-    const leaderScore = await contract.methods.leaderScore;
-    assert.notEqual(leaderScore, 105);  
-    const leaderAddress = await contract.methods.leaderAddress;
-    assert.notEqual(leaderAddress, nonOwner);
+    const leaderScore = parseInt(await contract.methods.getLeaderScore().call());
+    expect(leaderScore).to.not.equal(score);    // leaderscore should not be updated
+    expect(leaderScore).to.equal(100);
+    const leaderAddress = await contract.methods.getLeaderAddress().call();
+    expect(leaderAddress).to.not.equal(nonOwner);  // leader address should not be updated
+  })
+  it("3rd account with lower score submitted should be new leader", async function() {
+    const owner = accounts[0];
+    const firstAccount = accounts[1];  
+    const secondAccount = accounts[2];
+    const firstScore = 60;   // lower score = new leader
+    const firstContractSubmission = await contract.methods.contractSubmission(firstScore).send({from: firstAccount});
+    //let leaderScore = parseInt(await contract.methods.getLeaderScore().call()); // should = 60 at this point
+    const secondScore = 50;
+    const secondContractSubmission = await contract.methods.contractSubmission(secondScore).send({from: secondAccount});
+    let leaderScore = parseInt(await contract.methods.getLeaderScore().call()); // should = 50 at this point
+    expect(leaderScore).to.equal(secondScore);    // leaderScore should = 50 (2nd account) and should be new leader
+    const leaderAddress = await contract.methods.getLeaderAddress().call();
+    expect(leaderAddress).to.equal(secondAccount);  // leader address should be second accounts
+  })
+  it("3rd account with higher score submitted should not affect leader", async function() {
+    const owner = accounts[0];
+    const firstAccount = accounts[1];  
+    const secondAccount = accounts[2];
+    const firstScore = 60;   // lower score = new leader
+    const firstContractSubmission = await contract.methods.contractSubmission(firstScore).send({from: firstAccount});
+    //let leaderScore = parseInt(await contract.methods.getLeaderScore().call()); // should = 60 at this point
+    const secondScore = 80;
+    const secondContractSubmission = await contract.methods.contractSubmission(secondScore).send({from: secondAccount});
+    let leaderScore = parseInt(await contract.methods.getLeaderScore().call()); // should = 50 at this point
+    expect(leaderScore).to.equal(firstScore);
+    const leaderAddress = await contract.methods.getLeaderAddress().call();
+    expect(leaderAddress).to.equal(firstAccount);  // leader address should be second accounts
   })
   it("Owner cannot call contractSubmission()", async function() {
-    const owner = accounts[0];
+    expect.fail("The owner is not able to call contractSubmission()");
+    const owner = accounts[0];  
     const score = 60;
     const contractSubmission = await contract.methods.contractSubmission(score).send({from: owner});
-    const leaderScore = await contract.methods.leaderScore;
-    assert.fail(leaderScore, 60);  
   })
   it("contractSubmission() requires a score to be passed", async function() {
+    expect.fail("A score must be passed as a parameter.");
     const nonOwner = accounts[1];
-    const contractSubmission = await contract.methods.contractSubmission().send({from: nonOwner});
-    const leaderScore = await contract.methods.leaderScore;
-    assert.fail(leaderScore, 60, "Non-owner must pass a score as a parameter.");  
+    const contractSubmission = await contract.methods.contractSubmission().send({from: nonOwner});  // no score sent
+    const leaderScore = await contract.methods.getLeaderScore().call();
   })
 });
 
 describe("Testing contractSubmission() end time", function() { 
   let contract;
   let accounts;
-  before(async function() {
+  beforeEach(async function() {
     contract = await compileCode();
     accounts = await web3.eth.getAccounts();
-    const ownerAddress = accounts[0];
-    const endTime = 1526110128; // this time is in the past
-    const beginContract = await contract.methods.beginContract(endTime).send({from: ownerAddress, value: 1000});
   })
   it("contractSubmission() must be called by a non-owner before the end time", async function() {
+    expect.fail("contractSubmission() must be called before the end time.");
+    const ownerAddress = accounts[0];
+    const endTime = parseInt(await contract.methods.currentTime().call());
+    const beginContract = await contract.methods.beginContract(endTime).send({from: ownerAddress, value: setContractAmount});
     const nonOwner = accounts[1];
     const score = 60;
     const contractSubmission = await contract.methods.contractSubmission(score).send({from: nonOwner});
-    assert.fail("contractSubmission() must be called before the end time!")
   })
 });
 
 describe("contractSubmission() requires beginContract() to be called first", function() { 
   let contract;
   let accounts;
-  before(async function() {
+  beforeEach(async function() {
     contract = await compileCode();
     accounts = await web3.eth.getAccounts();
-    const ownerAddress = accounts[0];
   })
-  // beginContract() is not called and so contractFunded = false
-  it("contractSubmission() requires beginContract() to be called first, so that contractFunded = true", async function() {
-    const nonOwner = accounts[1];
-    const score = 60;
+  it("contractSubmission() can be called by anyone but the owner after beginContract() is called.", async function() {
+    expect.fail("beginContract() must be called first");
+    const nonOwner = accounts[1];   // changing this to accounts[0] will fail the test
+    const score = 50;   // lower score
     const contractSubmission = await contract.methods.contractSubmission(score).send({from: nonOwner});
-    assert.fail("contractFunded = false");
   })
 });
 
-describe("winnerWithdrawal()", function() { 
+describe("Testing the winnerWithdrawal() function", function() {
+  this.timeout(10000);  // sets max timeout to 10000ms
   let contract;
   let accounts;
   let ownerAddress;
   let leaderAddress;
-  let endTime;
-  let beginCOntract;
   let score;
+  let endTime;
+  let beginContract;
   let contractSubmission;
-  beforeEach(async function() {
+  before(async function() {
+    // requires entire contract to be started, and a submission to set the leader
     contract = await compileCode();
     accounts = await web3.eth.getAccounts();
-    wnerAddress = accounts[0];
-    eaderAddress = accounts[1];
-    endTime = await contract.methods.currentTime();
-    beginContract = await contract.methods.beginContract(endTime).send({from: ownerAddress, value: 1000});
-    score = 60;
+    ownerAddress = accounts[0];
+    leaderAddress = accounts[1];
+    endTime = parseInt(await contract.methods.currentTime().call()) + 3; // changing this to longer than the timeout time will fail
+    web3.eth.getBalance(ownerAddress).then(console.log);  // balance of owner before beginContract
+    beginContract = await contract.methods.beginContract(endTime).send({from: ownerAddress, value: setContractAmount});
+    score = 60; // to ensure leader address is updated
     contractSubmission = await contract.methods.contractSubmission(score).send({from: leaderAddress});
-  })
-  // beginContract() is not called and so contractFunded = false
-  it("winnerWithdrawal() can only be called by leader, after the end time", async function() {
-    
-    assert.fail("contractFunded = false");
-  })
+    web3.eth.getBalance(leaderAddress).then(console.log);
+  });
+  beforeEach(function(done) {     // removing time delay will cause a fail in the test
+    setTimeout(function() {
+      done();
+    }, 5000);
+  });
+  it("winnerWithdrawal() can only be called after beginContract(), and after the end time", async function(){
+    const withdraw = await contract.methods.winnerWithdrawal().send({from: leaderAddress});
+    const contractValue = parseInt(await contract.methods.getContractAmount().call());
+    expect(contractValue).to.equal(0);
+    expect(await contract.methods.isFunded().call()).to.equal(false);   // contract no longer funded after withdrawal
+    expect(parseInt(await contract.methods.getLeaderScore().call())).to.equal(100); //leader score should be reset to 100
+    expect(await contract.methods.getLeaderAddress().call()).to.equal(await contract.methods.getAddressZero().call());  //leader address is reset to address(0)
+
+    web3.eth.getBalance(ownerAddress).then(console.log);
+    web3.eth.getBalance(leaderAddress).then(console.log);
+  });
+  it("Non-leader cannot call winnerWithdrawal()", async function(){
+    expect.fail("Only the leader can withdraw")
+    const nonLeaderAddress = accounts[2];
+    const withdraw = await contract.methods.winnerWithdrawal().send({from: nonLeaderAddress});
+    const contractValue = parseInt(await contract.methods.getContractAmount().call());
+  });
 });
 
+describe("Testing the winnerWithdrawal() function", function() {
+  let contract;
+  let accounts;
+  let ownerAddress;
+  let leaderAddress;
+  let score;
+  let endTime;
+  let beginContract;
+  let contractSubmission;
+  before(async function() {
+    // requires entire contract to be started, and a submission to set the leader
+    contract = await compileCode();
+    accounts = await web3.eth.getAccounts();
+    ownerAddress = accounts[0];
+    leaderAddress = accounts[1];
+    endTime = parseInt(await contract.methods.currentTime().call()) + 3; // changing this to longer than the timeout time will fail
+    beginContract = await contract.methods.beginContract(endTime).send({from: ownerAddress, value: setContractAmount});
+    score = 60; // to ensure leader address is updated
+    contractSubmission = await contract.methods.contractSubmission(score).send({from: leaderAddress});
+  });
+  it("winnerWithdrawal() cannot be called before the end time", async function(){
+    expect.fail("Cannot withdraw before the end time")
+    const withdraw = await contract.methods.winnerWithdrawal().send({from: leaderAddress});
+    const contractValue = parseInt(await contract.methods.getContractAmount().call());
+  });
+});
+
+describe("Testing the ownerWithdrawal() function", function() {
+  this.timeout(10000);  // sets max timeout to 10000ms
+  let contract;
+  let accounts;
+  let ownerAddress;
+  let endTime;
+  let beginContract;
+  before(async function() {
+    // requires entire contract to be started, and a submission to set the leader
+    contract = await compileCode();
+    accounts = await web3.eth.getAccounts();
+    ownerAddress = accounts[0];
+    endTime = parseInt(await contract.methods.currentTime().call()) + 3; // changing this to longer than the timeout time will fail
+    web3.eth.getBalance(ownerAddress).then(console.log);  // balance of owner before beginContract
+    beginContract = await contract.methods.beginContract(endTime).send({from: ownerAddress, value: setContractAmount});
+    web3.eth.getBalance(ownerAddress).then(console.log);
+  });
+  beforeEach(function(done) {     // removing time delay will cause a fail in the test
+    setTimeout(function() {
+      done();
+    }, 5000);
+  });
+  it("ownerWithdrawal() can only be called by owner, after the end time, with no submissions", async function(){
+    const ownerWithdraw = await contract.methods.ownerWithdrawal().send({from: ownerAddress});
+    const contractValue = parseInt(await contract.methods.getContractAmount().call());
+    expect(contractValue).to.equal(0);
+    expect(await contract.methods.isFunded().call()).to.equal(false);   // contract no longer funded after withdrawal
+    expect(await contract.methods.getLeaderAddress().call()).to.equal(await contract.methods.getAddressZero().call());    // leader address should = zero address
+    web3.eth.getBalance(ownerAddress).then(console.log);  // balance goes back up
+  });
+  it("Non-owners cannot call ownerWithdrawal()", async function(){
+    expect.fail("Non-owners of the contract cannot call ownerWithdrawal()")
+    const nonOwner = accounts[1];
+    const ownerWithdraw = await contract.methods.ownerWithdrawal().send({from: nonOwner});
+  });
+});
+
+describe("Testing the ownerWithdrawal() function (time)", function() {
+  this.timeout(10000);  // sets max timeout to 10000ms
+  let contract;
+  let accounts;
+  let ownerAddress;
+  let endTime;
+  let beginContract;
+  before(async function() {
+    // requires entire contract to be started, and a submission to set the leader
+    contract = await compileCode();
+    accounts = await web3.eth.getAccounts();
+    ownerAddress = accounts[0];
+    endTime = parseInt(await contract.methods.currentTime().call()) + 10000000000000; // 
+    web3.eth.getBalance(ownerAddress).then(console.log);  // balance of owner before beginContract
+    beginContract = await contract.methods.beginContract(endTime).send({from: ownerAddress, value: setContractAmount});
+    web3.eth.getBalance(ownerAddress).then(console.log);
+  });
+  beforeEach(function(done) {     // removing time delay will cause a fail in the test
+    setTimeout(function() {
+      done();
+    }, 5000);
+  });
+  it.only("Owner cannot call ownerWithdrawal() before end time", async function(){
+    expect.fail("Owner cannot call ownerWithdrawal() before the end time")
+    const ownerWithdraw = await contract.methods.ownerWithdrawal().send({from: ownerAddress});
+  });
+});
+
+// try to use boolean flag instead of time delay
+// csv/json for expect parameters
+
+describe("Testing the ownerWithdrawal() function with a submission", function() {
+  this.timeout(10000);  // sets max timeout to 10000ms
+  let contract;
+  let accounts;
+  let ownerAddress;
+  let leaderAddress;
+  let score;
+  let endTime;
+  let beginContract;
+  let contractSubmission;
+  before(async function() {
+    // requires entire contract to be started, and a submission to set the leader
+    contract = await compileCode();
+    accounts = await web3.eth.getAccounts();
+    ownerAddress = accounts[0];
+    leaderAddress = accounts[1];
+    endTime = parseInt(await contract.methods.currentTime().call()) + 3; // changing this to longer than the timeout time will fail
+    web3.eth.getBalance(ownerAddress).then(console.log);  // balance of owner before beginContract
+    beginContract = await contract.methods.beginContract(endTime).send({from: ownerAddress, value: setContractAmount});
+    score = 60; // to ensure leader address is updated
+    contractSubmission = await contract.methods.contractSubmission(score).send({from: leaderAddress});
+    web3.eth.getBalance(leaderAddress).then(console.log);
+  });
+  beforeEach(function(done) {     
+    setTimeout(function() {
+      done();
+    }, 5000);
+  });
+  it("ownerWithdrawal() can only be called if there is no submission", async function(){
+    expect.fail("Owner cannot withdraw after there has been a submission")
+    const withdraw = await contract.methods.ownerWithdrawal().send({from: leaderAddress});
+  });
+});
 
 // unit tests
 // use try catch to go over failures, so that the tests dont stop
 // in the catch block make sure values havent changed and then assert that the values havent changed
 
-
-//
-/*
-describe("Non owner cannot call beginContract()", function() {
-  let contract;
-  let accounts;
-  beforeEach(async function() {
-    contract = await compileCode();
-    accounts = await web3.eth.getAccounts();
-  })
-  it("The owner is able to call beginContract()", async function() {
-    const nonOwner = accounts[1];
-    const endTime = await contract.methods.currentTime().call();
-    const beginContract = await contract.methods.beginContract(endTime).send({from: nonOwner, value: 1000});
-    const hardcodedEndTime = 1625858389;
-    assert(hardcodedEndTime, endTime, "Should fail because only owner can call beginContract()");
-  })
-})
-
-
-
-
-// compileCode().then(gasEstimate => console.log(gasEstimate));
-
-// const contestContract = new web3.eth.Contract(abi);
-// compileCode().then((myContract) => {contestContract.options.address = myContract.options.address});
-// console.log(contestContract);
-
-// let contract = compileCode();
-// contract.then(function(result) {
-//   console.log(contract.methods);
-// })
-// const myFunction = async() => {
-//     const accounts = await web3.eth.getAccounts();
-//     const gasEstimate = await web3.eth.estimateGas({
-//     from: accounts[0]
-//   })
-//     const contract = await new web3.eth.Contract(abi).deploy({
-//     data: byteCode,
-//     arguments: [accounts[0], 1000]
-//   }).send({
-//     from: accounts[0], 
-//     gas: 6700000,
-//     gasPrice: gasEstimate
-//   })
-  
-//   //return gasEstimate;
-//     return accounts;
-//   };
-  
-//   (async () => {
-//     const myAccounts = await myFunction()
-//     //console.log(myAccounts[0])
-
-//   })();
-  // describe('Test 1', function() {
-  //   it('Checking owner address', function() {
-  //     assert(accounts[0] == contracts.owner, 'Accounts are the same.');
-  //   })
-  // })
-
-
-
-
-
-/*
-
-describe("Constructor", function(){
-  const myFunction = async() => {
-  const accounts = await web3.eth.getAccounts();
-  const gasEstimate = await web3.eth.estimateGas({
-  from: accounts[0]
-})
-  const contract = await new web3.eth.Contract(abi).deploy({
-  data: byteCode,
-  arguments: [accounts[0], 1000]
-}).send({
-  from: accounts[0],
-  gas: 6700000,
-  gasPrice: gasEstimate
-})
-  //return gasEstimate;
-  return accounts;
-};
-  (async () => {
-  const accounts = await myFunction()
-  it("Checking Owner address, leaderAddress should be the zero address, leaderScore should be 100, contractAmount should equal 1000", function(){
-  assert(accounts[0] == owner, "Owner address is correct");
-  assert(leaderAddress == address(0), "Leader addres is equal to the zero address");
-  assert(leaderScore == 100, "leaderScore is equal to 100");
-  assert(contractAmount == 1000, "contractAmount is equal to 1000");
-})
-})();
-
-
-})
-
-
-*/
-  
-
-// deploy contract in describe
-// use contract methods to interact with blockchain 
-
-//console.log(evm.bytecode.object);
-/*
-const web3 = new ethereumJS('http://localhost:8545');
-
-// accounts
-web3.eth.getAccounts().then(function(result) { 
-accounts = result;
-})
-
-
-const contestContract = new web3.eth.Contract(contestInterface);
-
-//deploy
-contestContract.deploy({
-    data: contestBytecode,
-    arguments: [accounts[0], 1000]
-}).send({
-    from: accounts[0], 
-    gas: 400000
-}).then((myContract) => {contestContract.options.address = myContract.options.address});
-*/
