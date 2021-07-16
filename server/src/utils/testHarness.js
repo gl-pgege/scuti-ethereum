@@ -107,7 +107,7 @@ async function sendAndCalculateGasUsedForTxn(account, transaction, txnType, expl
             break;
     }
     
-    console.log(sendDetails);
+    // console.log(sendDetails);
     
     const initialAccountBalance = await web3.eth.getBalance(account);
     const txnReturnValue = await transaction.send({
@@ -116,7 +116,7 @@ async function sendAndCalculateGasUsedForTxn(account, transaction, txnType, expl
     const finalAccountBalance = await web3.eth.getBalance(account);
     const gasUsed = initialAccountBalance - finalAccountBalance;
 
-    console.log("gasUsed", gasUsed);
+    // console.log("gasUsed", gasUsed);
 
     return {
         gasUsed,
@@ -126,8 +126,6 @@ async function sendAndCalculateGasUsedForTxn(account, transaction, txnType, expl
 
 const expectThrowsAsync = async (method) => {
 
-    let testResult;
-
     let error = null
     try {
         await method()
@@ -135,15 +133,7 @@ const expectThrowsAsync = async (method) => {
         error = err
     }
 
-    
-    try{
-        testResult = `Pass - ${(expect(error.message).to.not.be.empty)}`;
-        
-    } catch(error){
-        testResult = `Fail - ${error}`;
-    }
-
-    return testResult;
+    expect(error).to.not.be.null        
 }
 
 function isAddress(property){
@@ -190,7 +180,7 @@ async function deployContract(contractPath, constructorSettings, accounts){
     } = constructorSettings;
 
     const parsedConstructorArguments = replaceAddressPlaceholdersWithAccounts(constructorArguments, accounts)
-    console.log(parsedConstructorArguments);
+    // console.log(parsedConstructorArguments);
 
     let transaction = await new web3.eth.Contract(abi).deploy({
         data: `0x${evm.bytecode.object}`,
@@ -206,18 +196,31 @@ async function deployContract(contractPath, constructorSettings, accounts){
     }
 }
 
+function generateTestResults(passedTests, failedTests, gasSpent){
+    return {
+        pass: passedTests.length,
+        fail: failedTests.length,
+        failedTests,
+        gasUsed: gasSpent
+    }
+}
+
 async function testContract(contractPath, constructorSettings, testCases){
+
+    const PASS = "PASS";
+    const FAIL = "FAIL";
 
     const {accountsNeeded} = constructorSettings;
     const userAccounts = await generateAccountsBasedOnRoles(accountsNeeded);
-    let testResults = {}
+    let passedTests = [];
+    let failedTests = [];
+    let gasSpent = 0;
 
     try{
         
-        let {gasUsed, contract: initialContract} = await deployContract(contractPath, constructorSettings, userAccounts)
-        // gasSpent += gasUsed;        
-
-        let testResult;
+        let {gasUsed: deploymentCost, contract: initialContract} = await deployContract(contractPath, constructorSettings, userAccounts)
+        // GAS CALCULATION
+        gasSpent += deploymentCost;        
 
         for(let i = 0; i < testCases.length; i++){
             let contract = initialContract;
@@ -236,27 +239,52 @@ async function testContract(contractPath, constructorSettings, testCases){
             const parsedArguments = replaceAddressPlaceholdersWithAccounts(arguments, userAccounts);
 
             if(resetContract){
-                const {gasUsed: newContractGasUse, contract: newContract} = await deployContract(contractPath, constructorSettings, userAccounts);
-                gasUsed = newContractGasUse,
+                const {gasUsed: newContractDeploymentCost , contract: newContract} = await deployContract(contractPath, constructorSettings, userAccounts);
+                // GAS CALCULATION
+                gasSpent += newContractDeploymentCost;        
+
                 contract = newContract;
             }
 
             transaction = contract.methods[functionName](...parsedArguments);
 
             if(negativeTest){
-                testResult = await expectThrowsAsync(
-                    (async function(){
-                        return await transaction.send({
-                            from: userAccounts[account]
-                        });
+                
+                try{
+                    await expectThrowsAsync(
+                        (async function(){
+                            let {gasUsed: failingTransactionCost} = await sendAndCalculateGasUsedForTxn(
+                                userAccounts[account], 
+                                transaction, 
+                                transactionTypes.functionCall, 
+                                false, 
+                                payableAmount
+                            )
+                            // GAS CALCULATION
+                            gasSpent += failingTransactionCost;        
+                        })
+                    );
+
+                    passedTests.push({
+                        functionName,
+                        result: PASS,
+                        negativeTest,
                     })
-                );
-                const failingProperty = `${functionName}-${i}-failing-test`;
-                testResults[failingProperty] = testResult;
+
+                } catch (error) {
+                    // console.log(error)
+                    failedTests.push({
+                        functionName,
+                        result: FAIL,
+                        negativeTest,
+                        issue: "expected transaction to revert"
+                    })
+                }
             } else {
                 
-                let { gasUsed } = await sendAndCalculateGasUsedForTxn(userAccounts[account], transaction, transactionTypes.functionCall, false ,payableAmount);
-                // gasSpent += gasUsed;
+                let { gasUsed: transactionCost } = await sendAndCalculateGasUsedForTxn(userAccounts[account], transaction, transactionTypes.functionCall, false ,payableAmount);
+                // GAS CALCULATION
+                gasSpent += transactionCost;        
             }
 
             let actualOutput = await contract.methods[valueToCheck]().call()
@@ -266,15 +294,27 @@ async function testContract(contractPath, constructorSettings, testCases){
             }
 
             try{
-                testResult = `Pass - ${(expect(expectedOutput).to.equal(actualOutput))}`;
+                expect(expectedOutput).to.equal(actualOutput)
+                
+                passedTests.push({
+                    functionName,
+                    result: PASS,
+                    negativeTest,
+                })
             } catch(error){
-                testResult = `Fail - ${error}`;
-            }
 
-            const property = `${functionName}-${i}`;
-            testResults[property] = testResult;
+                failedTests.push({
+                    functionName,
+                    result: FAIL,
+                    negativeTest,
+                    issue: error.message
+                })
+                // testResult = `Fail - ${error}`;
+            }            
         }
 
+        const testResults = generateTestResults(passedTests, failedTests, gasSpent);
+        
         return testResults
     } catch(error){
         // console.log(error);
