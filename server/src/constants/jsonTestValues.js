@@ -56,7 +56,7 @@ const contestTestJsonObject = [
     {
         functionName: "beginContract",
         arguments: [1626098243],
-        expectedOutput: true,
+        expectedOutput: false,
         valueToCheck: "contractFunded",
         account: "contract_owner",
         negativeTest: false,

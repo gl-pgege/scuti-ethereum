@@ -268,6 +268,7 @@ async function testContract(contractPath, constructorSettings, testCases){
                     passedTests.push({
                         functionName,
                         result: PASS,
+                        valueToCheck,
                         negativeTest,
                     })
 
@@ -276,6 +277,7 @@ async function testContract(contractPath, constructorSettings, testCases){
                     failedTests.push({
                         functionName,
                         result: FAIL,
+                        valueToCheck,
                         negativeTest,
                         issue: "expected transaction to revert"
                     })
@@ -299,6 +301,7 @@ async function testContract(contractPath, constructorSettings, testCases){
                 passedTests.push({
                     functionName,
                     result: PASS,
+                    valueToCheck,
                     negativeTest,
                 })
             } catch(error){
@@ -306,6 +309,7 @@ async function testContract(contractPath, constructorSettings, testCases){
                 failedTests.push({
                     functionName,
                     result: FAIL,
+                    valueToCheck,
                     negativeTest,
                     issue: error.message
                 })
