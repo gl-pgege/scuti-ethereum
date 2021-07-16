@@ -4,7 +4,8 @@ const solc = require("solc");
 const Web3 = require("web3");
 const ganache = require("ganache-cli");
 const _ = require("lodash");
-var expect = require('chai').expect;
+const expect = require('chai').expect;
+const { reject } = require("lodash");
 
 const web3 = new Web3(ganache.provider());
 const GAS = 6700000;
@@ -81,14 +82,20 @@ function generateTxnSendArgumentObj(account, explicitGas, payableAmount=0){
 }
 
 async function generateAccountsBasedOnRoles(rolesArray){
-    const userAccounts = await web3.eth.getAccounts();
-    let accountsObj = {}
-
-    rolesArray.forEach((role, index) => {
-        accountsObj[role] = userAccounts[index]
+    return new Promise(async (resolve, reject) => {
+        try {
+            const userAccounts = await web3.eth.getAccounts();
+            let accountsObj = {}
+        
+            rolesArray.forEach((role, index) => {
+                accountsObj[role] = userAccounts[index]
+            })
+        
+            resolve(accountsObj);
+        } catch (error){
+            reject(error)
+        }
     })
-
-    return accountsObj
 }
 
 async function sendAndCalculateGasUsedForTxn(account, transaction, txnType, explicitGas=false, payableAmount=0){
@@ -107,24 +114,28 @@ async function sendAndCalculateGasUsedForTxn(account, transaction, txnType, expl
             break;
     }
     
-    // console.log(sendDetails);
-    
-    const initialAccountBalance = await web3.eth.getBalance(account);
-    const txnReturnValue = await transaction.send({
-        ...sendDetails
-    });
-    const finalAccountBalance = await web3.eth.getBalance(account);
-    const gasUsed = initialAccountBalance - finalAccountBalance;
+    return new Promise(async (resolve, reject) => {
+        
+        try {
+            const initialAccountBalance = await web3.eth.getBalance(account);
+            const txnReturnValue = await transaction.send({
+                ...sendDetails
+            });
+            const finalAccountBalance = await web3.eth.getBalance(account);
+            const gasUsed = initialAccountBalance - finalAccountBalance;
 
-    // console.log("gasUsed", gasUsed);
+            resolve({
+                gasUsed,
+                txnReturnValue
+            });
+        } catch (error) {
+            reject(error);
+        }
 
-    return {
-        gasUsed,
-        txnReturnValue
-    };
+    });    
 }
 
-const expectThrowsAsync = async (method) => {
+async function expectThrowsAsync(method) {
 
     let error = null
     try {
@@ -179,21 +190,27 @@ async function deployContract(contractPath, constructorSettings, accounts){
         deploymentAccount
     } = constructorSettings;
 
-    const parsedConstructorArguments = replaceAddressPlaceholdersWithAccounts(constructorArguments, accounts)
-    // console.log(parsedConstructorArguments);
+    const parsedConstructorArguments = replaceAddressPlaceholdersWithAccounts(constructorArguments, accounts);
 
-    let transaction = await new web3.eth.Contract(abi).deploy({
-        data: `0x${evm.bytecode.object}`,
-        arguments: parsedConstructorArguments,
-    })
+    return new Promise( async (resolve, reject) => {
+        try {
+            let transaction = await new web3.eth.Contract(abi).deploy({
+                data: `0x${evm.bytecode.object}`,
+                arguments: parsedConstructorArguments,
+            })
+        
+            // deploy smart contract
+            let {gasUsed, txnReturnValue: contract} = await sendAndCalculateGasUsedForTxn(accounts[deploymentAccount], transaction, transactionTypes.deploy, true, constructorPayableAmount);
+    
+            resolve({
+                gasUsed,
+                contract
+            })
 
-    // deploy smart contract
-    let {gasUsed, txnReturnValue: contract} = await sendAndCalculateGasUsedForTxn(accounts[deploymentAccount], transaction, transactionTypes.deploy, true, constructorPayableAmount);
-
-    return {
-        gasUsed,
-        contract
-    }
+        } catch (error) {
+            reject(error);
+        }
+    });
 }
 
 function generateTestResults(passedTests, failedTests, gasSpent){
@@ -207,123 +224,117 @@ function generateTestResults(passedTests, failedTests, gasSpent){
 
 async function testContract(contractPath, constructorSettings, testCases){
 
-    const PASS = "PASS";
-    const FAIL = "FAIL";
-
-    const {accountsNeeded} = constructorSettings;
-    const userAccounts = await generateAccountsBasedOnRoles(accountsNeeded);
     let passedTests = [];
     let failedTests = [];
     let gasSpent = 0;
 
-    try{
+    const {accountsNeeded} = constructorSettings;
+    
+    const userAccounts = await generateAccountsBasedOnRoles(accountsNeeded);
+
+    return new Promise(async (resolve, reject) => {
+        try{
         
-        let {gasUsed: deploymentCost, contract: initialContract} = await deployContract(contractPath, constructorSettings, userAccounts)
-        // GAS CALCULATION
-        gasSpent += deploymentCost;        
-
-        for(let i = 0; i < testCases.length; i++){
-            let contract = initialContract;
-
-            const {
-                functionName, 
-                arguments, 
-                expectedOutput, 
-                valueToCheck, 
-                account,
-                negativeTest,
-                payableAmount,
-                resetContract
-            } = testCases[i];
-
-            const parsedArguments = replaceAddressPlaceholdersWithAccounts(arguments, userAccounts);
-
-            if(resetContract){
-                const {gasUsed: newContractDeploymentCost , contract: newContract} = await deployContract(contractPath, constructorSettings, userAccounts);
-                // GAS CALCULATION
-                gasSpent += newContractDeploymentCost;        
-
-                contract = newContract;
-            }
-
-            transaction = contract.methods[functionName](...parsedArguments);
-
-            if(negativeTest){
-                
-                try{
-                    await expectThrowsAsync(
-                        (async function(){
-                            let {gasUsed: failingTransactionCost} = await sendAndCalculateGasUsedForTxn(
-                                userAccounts[account], 
-                                transaction, 
-                                transactionTypes.functionCall, 
-                                false, 
-                                payableAmount
-                            )
-                            // GAS CALCULATION
-                            gasSpent += failingTransactionCost;        
+            let {gasUsed: deploymentCost, contract: initialContract} = await deployContract(contractPath, constructorSettings, userAccounts)
+            // GAS CALCULATION
+            gasSpent += deploymentCost;        
+    
+            for(let i = 0; i < testCases.length; i++){
+                let contract = initialContract;
+    
+                const {
+                    functionName, 
+                    arguments, 
+                    expectedOutput, 
+                    valueToCheck, 
+                    account,
+                    negativeTest,
+                    payableAmount,
+                    resetContract
+                } = testCases[i];
+    
+                const parsedArguments = replaceAddressPlaceholdersWithAccounts(arguments, userAccounts);
+    
+                if(resetContract){
+                    const {gasUsed: newContractDeploymentCost , contract: newContract} = await deployContract(contractPath, constructorSettings, userAccounts);
+                    // GAS CALCULATION
+                    gasSpent += newContractDeploymentCost;        
+    
+                    contract = newContract;
+                }
+    
+                transaction = contract.methods[functionName](...parsedArguments);
+    
+                if(negativeTest){
+                    
+                    try{
+                        await expectThrowsAsync(
+                            async function(){
+                                let {gasUsed: failingTransactionCost} = await sendAndCalculateGasUsedForTxn(
+                                    userAccounts[account], 
+                                    transaction, 
+                                    transactionTypes.functionCall, 
+                                    false, 
+                                    payableAmount
+                                )
+                                // GAS CALCULATION
+                                gasSpent += failingTransactionCost;        
+                            }
+                        );
+    
+                        passedTests.push({
+                            functionName,
+                            valueToCheck,
+                            negativeTest,
                         })
-                    );
-
+    
+                    } catch (error) {
+                        failedTests.push({
+                            functionName,
+                            valueToCheck,
+                            negativeTest,
+                            issue: "expected transaction to revert"
+                        })
+                    }
+                } else {
+                    
+                    let { gasUsed: transactionCost } = await sendAndCalculateGasUsedForTxn(userAccounts[account], transaction, transactionTypes.functionCall, false ,payableAmount);
+                    // GAS CALCULATION
+                    gasSpent += transactionCost;        
+                }
+    
+                let actualOutput = await contract.methods[valueToCheck]().call()
+    
+                if(typeof expectedOutput === "number"){
+                    actualOutput = parseInt(actualOutput);
+                }
+    
+                try{
+                    expect(expectedOutput).to.equal(actualOutput)
+                    
                     passedTests.push({
                         functionName,
-                        result: PASS,
                         valueToCheck,
                         negativeTest,
                     })
-
-                } catch (error) {
-                    // console.log(error)
+                } catch(error){
+    
                     failedTests.push({
                         functionName,
-                        result: FAIL,
                         valueToCheck,
                         negativeTest,
-                        issue: "expected transaction to revert"
+                        issue: error.message
                     })
-                }
-            } else {
-                
-                let { gasUsed: transactionCost } = await sendAndCalculateGasUsedForTxn(userAccounts[account], transaction, transactionTypes.functionCall, false ,payableAmount);
-                // GAS CALCULATION
-                gasSpent += transactionCost;        
+                }            
             }
-
-            let actualOutput = await contract.methods[valueToCheck]().call()
-
-            if(typeof expectedOutput === "number"){
-                actualOutput = parseInt(actualOutput);
-            }
-
-            try{
-                expect(expectedOutput).to.equal(actualOutput)
-                
-                passedTests.push({
-                    functionName,
-                    result: PASS,
-                    valueToCheck,
-                    negativeTest,
-                })
-            } catch(error){
-
-                failedTests.push({
-                    functionName,
-                    result: FAIL,
-                    valueToCheck,
-                    negativeTest,
-                    issue: error.message
-                })
-                // testResult = `Fail - ${error}`;
-            }            
+    
+            const testResults = generateTestResults(passedTests, failedTests, gasSpent);
+            
+            resolve(testResults)
+        } catch(error){
+            reject(error);
         }
-
-        const testResults = generateTestResults(passedTests, failedTests, gasSpent);
-        
-        return testResults
-    } catch(error){
-        // console.log(error);
-        throw new Error(error);
-    }
+    })
 }
 
 module.exports = {

@@ -73,7 +73,6 @@ async function extractCompressedFile(downloadedTarFolderPath, repoTestingDirecto
 }
 
 async function downloadRepo(url){
-
     // MAKE FUNCTION RETURN PROMISE
 
     let compressedRepoPath;
@@ -87,22 +86,22 @@ async function downloadRepo(url){
         }
     };
 
-    try{
-        const response = await fetch(url, options)
-        const data = await response.buffer();
-
-        // TODO: (David) Create the "contracts" folder if it doesn't exist 
-        // (create function that accepts the tar.gz folder name if contracts exists just send back path, otherwise create and send back path)
-        compressedRepoPath = path.resolve(__dirname, '..', 'contracts', 'contract.tar.gz');
-        
-        fs.createWriteStream(compressedRepoPath).write(data);
-
-    } catch (error){
-        console.log(error);
-    }
-
-    return compressedRepoPath;
+    return new Promise(async (resolve, reject) => {
+        try{
+            const response = await fetch(url, options)
+            const data = await response.buffer();
     
+            // TODO: (David) Create the "contracts" folder if it doesn't exist 
+            // (create function that accepts the tar.gz folder name if contracts exists just send back path, otherwise create and send back path)
+            compressedRepoPath = path.resolve(__dirname, '..', 'contracts', 'contract.tar.gz');
+            
+            fs.createWriteStream(compressedRepoPath).write(data);
+            
+            resolve(compressedRepoPath);
+        } catch (error){
+            reject(error);
+        }
+    })
 }
 
 module.exports = {
