@@ -72,6 +72,25 @@ async function extractCompressedFile(downloadedTarFolderPath, repoTestingDirecto
     })
 }
 
+// change this_is_a_test to contracts
+function generateRepoPath(folderName) {
+    try {
+        
+        const dir = path.resolve(__dirname, '..', folderName);    
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir);
+            return path.resolve(dir, 'contract.tar.gz');
+        }
+        else {
+            return path.resolve(__dirname, '..', folderName, 'contract.tar.gz');
+        }
+    }
+    catch(error) {
+        console.log(error.message);
+    }
+}
+
+
 async function downloadRepo(url){
     // MAKE FUNCTION RETURN PROMISE
 
@@ -93,8 +112,11 @@ async function downloadRepo(url){
     
             // TODO: (David) Create the "contracts" folder if it doesn't exist 
             // (create function that accepts the tar.gz folder name if contracts exists just send back path, otherwise create and send back path)
-            compressedRepoPath = path.resolve(__dirname, '..', 'contracts', 'contract.tar.gz');
+            //compressedRepoPath = path.resolve(__dirname, '..', 'contracts', 'contract.tar.gz');
+            //__dirname is an envrionment variable that tells us the absolute path to the path of this directory 
             
+            compressedRepoPath = generateRepoPath(folderName);
+
             fs.createWriteStream(compressedRepoPath).write(data);
             
             resolve(compressedRepoPath);
@@ -103,6 +125,8 @@ async function downloadRepo(url){
         }
     })
 }
+// const path1 = generateRepoPath("test_folde");
+// console.log(path1);
 
 module.exports = {
     extractCompressedFile,
