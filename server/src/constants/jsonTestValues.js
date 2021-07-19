@@ -83,23 +83,33 @@ const contestTestJsonObject = [
         payableAmount: 1000,
         resetContract: true
     },
+    {
+        functionName: "contractSubmission",
+        arguments: [50],
+        expectedOutput: 50,
+        valueToCheck: "leaderScore",
+        account: "developer",
+        negativeTest: false,
+        payableAmount: 0,
+        resetContract: false
+    },
+    {
+        functionName: "contractSubmission",
+        arguments: [50],
+        expectedOutput: 50,
+        valueToCheck: "leaderScore",
+        account: "contract_owner",
+        negativeTest: true,
+        payableAmount: 0,
+        resetContract: false
+    },
     // {
-    //     functionName: "contractSubmission",
-    //     arguments: [50],
-    //     expectedOutput: 50,
-    //     valueToCheck: "leaderScore",
-    //     account: "developer",
-    //     negativeTest: false,
-    //     payableAmount: 0,
-    //     resetContract: false
-    // },
-    // {
-    //     functionName: "contractSubmission",
-    //     arguments: [50],
-    //     expectedOutput: 50,
-    //     valueToCheck: "leaderScore",
+    //     functionName: "endContract",
+    //     arguments: [],
+    //     expectedOutput: false,
+    //     valueToCheck: "contractStarted",
     //     account: "contract_owner",
-    //     negativeTest: true,
+    //     negativeTest: false,
     //     payableAmount: 0,
     //     resetContract: false
     // },

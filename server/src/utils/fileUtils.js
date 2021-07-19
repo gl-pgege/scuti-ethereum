@@ -37,7 +37,7 @@ async function extractCompressedFile(downloadedTarFolderPath, repoTestingDirecto
         
                 stream.resume();
             } catch (error) {
-                reject(error.message);
+                reject(error);
             }
         });
     
@@ -55,10 +55,10 @@ async function extractCompressedFile(downloadedTarFolderPath, repoTestingDirecto
                 if(testFileLocation){
                     resolve(testFileLocation);
                 } else {
-                    reject("Unsuccessful Extraction, please check test file exists");
+                    reject(new Error("Unsuccessful Extraction, please check test file exists"));
                 }
             } catch (error){
-                reject(error.message)
+                reject(error)
             }
         });
 
