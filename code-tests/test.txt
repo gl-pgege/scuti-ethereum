@@ -1,53 +1,66 @@
-{ user1: '0xCA3774E23e198686DaB585444EE4Cf042c253483' }
-{
-  from: '0xCA3774E23e198686DaB585444EE4Cf042c253483',
-  gas: 6700000,
-  gasPrice: '97000000000'
-}
-gasUsed 17004390999998464
-{ from: '0xCA3774E23e198686DaB585444EE4Cf042c253483' }
-gasUsed 83635999997952
-Pass -  Assertion {
-  __flags: [Object: null prototype] {
-    ssfi: [Function: methodWrapper],
-    lockSsfi: undefined,
-    object: 6,
-    message: undefined
+[
+  {
+    inputs: [ [Object], [Object], [Object] ],
+    name: 'add',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [ [Object] ],
+    name: 'addBook',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [],
+    name: 'answer',
+    outputs: [ [Object] ],
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    inputs: [ [Object] ],
+    name: 'answers',
+    outputs: [ [Object] ],
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    inputs: [],
+    name: 'book',
+    outputs: [ [Object], [Object], [Object] ],
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    inputs: [ [Object], [Object] ],
+    name: 'divide',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [ [Object], [Object], [Object], [Object] ],
+    name: 'multiply',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [],
+    name: 'random',
+    outputs: [ [Object] ],
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    inputs: [ [Object], [Object] ],
+    name: 'subtract',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function'
   }
-}
-{ from: '0xCA3774E23e198686DaB585444EE4Cf042c253483' }
-gasUsed 53241999998976
-Pass -  Assertion {
-  __flags: [Object: null prototype] {
-    ssfi: [Function: methodWrapper],
-    lockSsfi: undefined,
-    object: 8,
-    message: undefined
-  }
-}
-{ from: '0xCA3774E23e198686DaB585444EE4Cf042c253483' }
-gasUsed 53910000009216
-Pass -  Assertion {
-  __flags: [Object: null prototype] {
-    ssfi: [Function: methodWrapper],
-    lockSsfi: undefined,
-    object: 24,
-    message: undefined
-  }
-}
-{
-  from: { user1: '0xCA3774E23e198686DaB585444EE4Cf042c253483' },
-  gas: 6700000,
-  gasPrice: '97000000000'
-}
-Error: Provided address [object Object] is invalid, the capitalization checksum test failed, or it's an indirect IBAN address which can't be converted.
-    at Method.inputAddressFormatter (/home/paul/Desktop/scuti-ethereum/code-tests/node_modules/web3-core-helpers/lib/formatters.js:403:11)
-    at /home/paul/Desktop/scuti-ethereum/code-tests/node_modules/web3-core-method/lib/index.js:129:38
-    at Array.map (<anonymous>)
-    at Method.formatInput (/home/paul/Desktop/scuti-ethereum/code-tests/node_modules/web3-core-method/lib/index.js:127:32)
-    at Method.toPayload (/home/paul/Desktop/scuti-ethereum/code-tests/node_modules/web3-core-method/lib/index.js:160:23)
-    at Eth.send [as getBalance] (/home/paul/Desktop/scuti-ethereum/code-tests/node_modules/web3-core-method/lib/index.js:498:61)
-    at sendAndCalculateGasUsedForTxn (/home/paul/Desktop/scuti-ethereum/code-tests/testFile.js:111:50)
-    at deployContract (/home/paul/Desktop/scuti-ethereum/code-tests/testFile.js:158:53)
-    at processTicksAndRejections (internal/process/task_queues.js:95:5)
-    at testContract (/home/paul/Desktop/scuti-ethereum/code-tests/testFile.js:193:77)
+]
+{ pass: 2, fail: 0, failedTests: [], gasUsed: 73212495999991800 }
