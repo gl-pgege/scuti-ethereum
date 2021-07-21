@@ -14,7 +14,7 @@ contract Mathematics {
     uint public answer;
     uint public random;
 
-    Book public book;
+    Book[] public book;
 
     function add(uint value1, uint value2, uint value3) public {
         answers["add"] = value1 + value2 + value3;
@@ -29,7 +29,7 @@ contract Mathematics {
     }
 
     function addBook(Book memory _book) public {
-        book = _book;
+        book.push(_book);
     }
 
     function divide(uint value1, uint value2) public {

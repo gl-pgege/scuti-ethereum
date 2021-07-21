@@ -28,7 +28,7 @@
     type: 'function'
   },
   {
-    inputs: [],
+    inputs: [ [Object] ],
     name: 'book',
     outputs: [ [Object], [Object], [Object] ],
     stateMutability: 'view',
@@ -63,4 +63,25 @@
     type: 'function'
   }
 ]
-{ pass: 2, fail: 0, failedTests: [], gasUsed: 73212495999991800 }
+Result {
+  '0': 'test',
+  '1': 'paul',
+  '2': '12',
+  title: 'test',
+  author: 'paul',
+  book_id: '12'
+}
+[]
+{
+  pass: 1,
+  fail: 1,
+  failedTests: [
+    {
+      functionName: 'add',
+      valueToCheck: 'answers[add]',
+      negativeTest: false,
+      issue: 'expected 8 to equal 17'
+    }
+  ],
+  gasUsed: 77990813000007680
+}

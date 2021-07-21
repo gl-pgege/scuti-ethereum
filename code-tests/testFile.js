@@ -6,6 +6,7 @@ const ganache = require("ganache-cli");
 const _ = require("lodash");
 const expect = require('chai').expect;
 const { reject } = require("lodash");
+const { Console } = require("console");
 
 const web3 = new Web3(ganache.provider());
 const GAS = 6700000;
@@ -271,7 +272,6 @@ async function testSolidityFunction(contract, testCase){
         } = testCase;
         
         let actualOutput;
-    
         let arrayTestState;
     
         if(Array.isArray(expectedOutput)){
@@ -283,6 +283,8 @@ async function testSolidityFunction(contract, testCase){
     
             for(let i = 0; i < expectedOutput.length; i++){
                 actualOutput = await contract.methods[valueToCheck](i).call()
+
+                console.log(actualOutput);
     
                 try{
                     expectWrapper(expectedOutput[i], actualOutput); 
@@ -459,14 +461,14 @@ const mathematicTestJsonObj = [
             author: "paul",
             book_id: 12
         }],
-        expectedOutput: {
+        expectedOutput: [{
             "0": "test",
             "1": "paul",
             "2": "12",
             title: "test",
             author: "paul",
             book_id: "12"
-        },
+        }],
         valueToCheck: "book",
         account: "user1",
         negativeTest: false,
@@ -474,10 +476,10 @@ const mathematicTestJsonObj = [
         resetContract: false
     },
     {
-        functionName: "subtract",
-        arguments: [10, 2],
+        functionName: "add",
+        arguments: [10, 2, 5],
         expectedOutput: 8,
-        valueToCheck: "answers[subtract]",
+        valueToCheck: "answers[add]",
         account: "user1",
         negativeTest: false,
         payableAmount: 0,
