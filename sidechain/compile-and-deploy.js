@@ -17,7 +17,9 @@ function extractFileNameFromPath(path){
     return path.replace(/^.*[\\\/]/, '');
 }
 
-// instance of Web3
+const SCORE = 50;
+const CONTRACT_AMOUNT = 1000;
+
 function compileContract(contractPath){
 
   const contractFileName = extractFileNameFromPath(contractPath);
@@ -45,7 +47,6 @@ function compileContract(contractPath){
   };
 
   const compiledContract = JSON.parse(solc.compile(JSON.stringify(input)));
-  console.log(compiledContract);
   return compiledContract.contracts[contractFileName][contractName];
 
 }
@@ -53,7 +54,6 @@ function compileContract(contractPath){
 async function deployContract(contractPath, constructorSettings, contractOwner, web3Wrapper){
   // Contract compilation needs to adjust to contract name
   const {abi, evm} = compileContract(contractPath);
-  console.log(abi);
   const {
       arguments: constructorArguments, 
       payableAmount: constructorPayableAmount
@@ -102,10 +102,29 @@ async function deployContract(contractPath, constructorSettings, contractOwner, 
     side: sidechainAccounts[2]
   }
   
-  //const DeployedSideContest = await deployContract("../contracts/SideContest.sol", { arguments: [goodlabs.side]}, goodlabs.side, web3Sidechain);
-  const DeployedTestContest = await deployContract("../contracts/TestContest.sol", { arguments: [goodlabs.main, contractOwner.main, 1000]}, contractOwner.main, web3);
+  const DeployedSideContest = await deployContract("../contracts/SideContest.sol", { arguments: [goodlabs.side]}, goodlabs.side, web3Sidechain);
+  const DeployedTestContest = await deployContract("../contracts/TestContest.sol", { arguments: [goodlabs.main, contractOwner.main, CONTRACT_AMOUNT]}, contractOwner.main, web3);
 
-  console.log(DeployedTestContest);
+  const TestContestAddress = DeployedTestContest._address;
+  
+  //Begin Contract
+  const endTime = parseInt(await DeployedTestContest.methods.currentTime().call());
+  const beginContract = await DeployedTestContest.methods.beginContract(endTime).send({from: contractOwner.main, value: CONTRACT_AMOUNT});
+
+  /*
+    Submit to SideChain Contract
+    TODO: 
+    1. Find a way to stop accepting submissions after contract end time. NOTE(similar to Algorand Stateless and Stateful Transactions -- Make it Atomic)
+    2. Add a contractIsFunded check to ensure developers are submitting while contest is still going on.
+  */
+  const contractSubmission = await DeployedSideContest.methods.contractSubmission(SCORE, developer.main, TestContestAddress).send({from: goodlabs.side});
+
+  //Retrieve Current Leader From SideChain
+  const currentLeader = await DeployedSideContest.methods.ContestData(TestContestAddress).call();
+
+  // Developer Claiming Funds
+  const claimFunds = await DeployedTestContest.methods.winnerWithdrawal(currentLeader.leaderAddress).send({from: goodlabs.main});
+  
 })()
 
 
