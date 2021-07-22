@@ -1,0 +1,17 @@
+{
+  "name": "sidechain",
+  "version": "1.0.0",
+  "description": "",
+  "main": "compile-and-deploy.js",
+  "scripts": {
+    "start": "node compile-and-deploy.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@truffle/hdwallet-provider": "^1.4.1",
+    "ganache-cli": "^6.12.2",
+    "solc": "^0.6.12",
+    "web3": "^1.4.0"
+  }
+}
