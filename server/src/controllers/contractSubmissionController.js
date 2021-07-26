@@ -1,11 +1,14 @@
 const path = require('path');
-const { extractCompressedFile, downloadRepo } = require("../../utils/fileUtils");
+const { extractCompressedFile } = require("../../utils/fileUtils");
 const {testContract} = require("../utils/testHarness");
 const {
     contestConstructorDetails,
     contestTestJsonObject
-} = require("../constants/jsonTestValues");
-const { generateGithubDownloadUrl } = require("../utils/url.js");
+} = require("../../constants/jsonTestValues");
+const { 
+    generateGithubDownloadUrl, 
+    downloadRepo
+} = require("../../utils/github.js");
 
 async function contractSubmissionController(req, res){
 

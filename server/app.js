@@ -1,5 +1,8 @@
 const express = require("express");
-const etherRoutes = require("./src/routes/codeSubmission");
+
+const codeSubmission = require("./src/routes/codeSubmission");
+const optIntoContract = require("./src/routes/optIntoContract");
+
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -11,7 +14,9 @@ app.use(express.urlencoded({
 }));
 
 app.use(express.json());
-app.use("/api", etherRoutes);
+
+app.use("/api", codeSubmission);
+app.use("/api", optIntoContract);
 
 const port = process.env.PORT || 9000;
 
