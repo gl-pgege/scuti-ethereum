@@ -4,6 +4,6 @@ const testCaseRouter = express.Router();        //Router() when we handle our re
 let testCaseController = require('../controllers/testCaseSubmissionController');
 
 // Post routes
-testCaseRouter.post('/', testCaseController);
+testCaseRouter.post('/contract/id/testcases', testCaseController);
 
 module.exports = testCaseRouter;

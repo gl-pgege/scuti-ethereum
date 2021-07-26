@@ -13,7 +13,7 @@ app.use(express.urlencoded({
 
 app.use(express.json());
 app.use("/api", etherRoutes);
-app.use('/contract/id/testcases', testCaseRoute);
+app.use('/api', testCaseRoute);
 const port = process.env.PORT || 9000;
 
 app.listen(port, () => {
