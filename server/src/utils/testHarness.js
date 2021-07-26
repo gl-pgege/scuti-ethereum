@@ -7,6 +7,8 @@ const _ = require("lodash");
 const expect = require('chai').expect;
 const { reject } = require("lodash");
 
+const {extractFileNameFromPath} = require("../../utils/fileUtils");
+
 const web3 = new Web3(ganache.provider());
 const GAS = 6700000;
 const GASPRICE = '97000000000';
@@ -14,10 +16,6 @@ const GASPRICE = '97000000000';
 const transactionTypes = {
     deploy: "DEPLOY",
     functionCall: "FUNCTION_CALL",
-}
-
-function extractFileNameFromPath(path){
-    return path.replace(/^.*[\\\/]/, '');
 }
 
 // TODO: Add ability to change compiler versions based on the contract specified compiler versions

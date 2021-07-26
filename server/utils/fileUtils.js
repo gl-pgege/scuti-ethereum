@@ -93,7 +93,7 @@ async function downloadRepo(url){
     
             // TODO: (David) Create the "contracts" folder if it doesn't exist 
             // (create function that accepts the tar.gz folder name if contracts exists just send back path, otherwise create and send back path)
-            compressedRepoPath = path.resolve(__dirname, '..', 'contracts', 'contract.tar.gz');
+            compressedRepoPath = path.resolve(__dirname, '..',"src", 'contracts', 'contract.tar.gz');
             
             fs.createWriteStream(compressedRepoPath).write(data);
             
@@ -104,7 +104,12 @@ async function downloadRepo(url){
     })
 }
 
+function extractFileNameFromPath(path){
+    return path.replace(/^.*[\\\/]/, '');
+}
+
 module.exports = {
     extractCompressedFile,
+    extractFileNameFromPath,
     downloadRepo
 }

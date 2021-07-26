@@ -1,4 +1,3 @@
-const path = require('path');
 const solc = require('solc');
 const fs = require('fs');
 const Web3 = require('web3');
@@ -13,6 +12,7 @@ const SidechainProvider = new HDWalletProvider({
 
 const web3 = new Web3(ganache.provider()); 
 const web3Sidechain = new Web3(SidechainProvider); 
+
 function extractFileNameFromPath(path){
     return path.replace(/^.*[\\\/]/, '');
 }
@@ -61,7 +61,7 @@ async function deployContract(contractPath, constructorSettings, contractOwner, 
 
   return new Promise( async (resolve, reject) => {
       try {
-        const gasEstimate = await web3.eth.estimateGas({
+        const gasEstimate = await web3Wrapper.eth.estimateGas({
             from: contractOwner
         })
           let contract = await new web3Wrapper.eth.Contract(abi).deploy({

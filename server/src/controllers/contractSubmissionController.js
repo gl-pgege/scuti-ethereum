@@ -1,5 +1,5 @@
 const path = require('path');
-const { extractCompressedFile, downloadRepo } = require("../utils/fileUtils");
+const { extractCompressedFile, downloadRepo } = require("../../utils/fileUtils");
 const {testContract} = require("../utils/testHarness");
 const {
     contestConstructorDetails,
