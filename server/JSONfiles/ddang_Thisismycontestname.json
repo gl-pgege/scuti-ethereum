@@ -1,0 +1,13 @@
+{
+  "GithubID": "ddang",
+  "ContestName": "This is my contest name",
+  "Company Name": "Goodlabs",
+  "Description": "This is a description of the contest",
+  "Arguments": [
+    5,
+    7,
+    9
+  ],
+  "Expected Outcome": 69,
+  "UUID": "5b2c35fe-4d7e-4f2f-b494-f133fa7af762"
+}
