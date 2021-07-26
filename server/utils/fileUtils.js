@@ -1,5 +1,4 @@
 const tar = require('tar-stream');
-const fetch = require("node-fetch");
 const fs = require('fs');
 const zlib = require('zlib');
 const path = require('path');
@@ -72,38 +71,6 @@ async function extractCompressedFile(downloadedTarFolderPath, repoTestingDirecto
     })
 }
 
-async function downloadRepo(url){
-    // MAKE FUNCTION RETURN PROMISE
-
-    let compressedRepoPath;
-
-    // TODO: Add to environment variable file
-    const authHeader = `token ${process.env.PERSONAL_ACCESS_TOKEN}`;
-    const options = {
-        method: "GET",
-        headers: {
-            Authorization: authHeader
-        }
-    };
-
-    return new Promise(async (resolve, reject) => {
-        try{
-            const response = await fetch(url, options)
-            const data = await response.buffer();
-    
-            // TODO: (David) Create the "contracts" folder if it doesn't exist 
-            // (create function that accepts the tar.gz folder name if contracts exists just send back path, otherwise create and send back path)
-            compressedRepoPath = path.resolve(__dirname, '..',"src", 'contracts', 'contract.tar.gz');
-            
-            fs.createWriteStream(compressedRepoPath).write(data);
-            
-            resolve(compressedRepoPath);
-        } catch (error){
-            reject(error);
-        }
-    })
-}
-
 function extractFileNameFromPath(path){
     return path.replace(/^.*[\\\/]/, '');
 }
@@ -111,5 +78,4 @@ function extractFileNameFromPath(path){
 module.exports = {
     extractCompressedFile,
     extractFileNameFromPath,
-    downloadRepo
 }
