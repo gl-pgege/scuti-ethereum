@@ -1,6 +1,8 @@
 const fetch = require("node-fetch");
 const fs = require('fs');
 const path = require("path");
+const { generateFolderIfNotExist } = require('./fileUtils.js');
+
 
 const { 
     AUTHHEADER, 
@@ -28,25 +30,31 @@ async function downloadRepo(url){
     let compressedRepoPath;
 
     // TODO: Add to environment variable file
+    const authHeader = `token ${process.env.GITHUB_PERSONAL_ACCESS_TOKEN}`;
     const options = {
         method: "GET",
         headers: {
-            Authorization: AUTHHEADER
+            Authorization: authHeader
         }
     };
-
     return new Promise(async (resolve, reject) => {
         try{
-            const response = await fetch(url, options)
-            const data = await response.buffer();
-    
-            // TODO: (David) Create the "contracts" folder if it doesn't exist 
-            // (create function that accepts the tar.gz folder name if contracts exists just send back path, otherwise create and send back path)
-            compressedRepoPath = path.resolve(__dirname, '..',"src", 'contracts', 'contract.tar.gz');
-            
-            fs.createWriteStream(compressedRepoPath).write(data);
-            
-            resolve(compressedRepoPath);
+            const response = await fetch(url, options);
+            if (response.ok) {
+                const data = await response.buffer();
+        
+                const folderPath = path.resolve(__dirname, '..', "src", 'contracts');
+                
+                compressedRepoPath = path.resolve(generateFolderIfNotExist(folderPath), 'contract.tar.gz');
+                console.log(compressedRepoPath);
+                fs.createWriteStream(compressedRepoPath).write(data);
+                
+                resolve(compressedRepoPath);
+            }
+            else {
+                const gitRequestError = await response.json();
+                reject(new Error(gitRequestError.message));
+            }
         } catch (error){
             reject(error);
         }

@@ -145,6 +145,7 @@ function replaceAddressPlaceholdersWithAccounts(funcArguments, availableAccounts
 
 async function deployContract(web3Instance, contractPath, constructorSettings, accounts){
     // Contract compilation needs to adjust to contract name
+    
     const {abi, evm} = compileContract(contractPath);
     const {
         arguments: constructorArguments, 

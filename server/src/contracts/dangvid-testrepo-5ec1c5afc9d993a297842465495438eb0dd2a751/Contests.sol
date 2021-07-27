@@ -1,6 +1,6 @@
 pragma solidity 0.6.12;
 
-contract Contest {
+contract Contests {
     address public owner;
 
     uint public endTime;
@@ -55,6 +55,10 @@ contract Contest {
         leaderScore = 100;
     }
     
+    function getOwner() public view returns(address) {
+        return msg.sender;
+    }
+    
     function currentTime() public view returns(uint){
         return block.timestamp;
     }
@@ -93,4 +97,6 @@ contract Contest {
             // THOUGHTS: WE CAN OPTIONALLY RESET THE OWNER TO A ZERO ADDRESS TO END THE CONTRACT
         }
     }
-}
+}  
+
+ 

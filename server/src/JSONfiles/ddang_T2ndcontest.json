@@ -1,0 +1,18 @@
+[
+  {
+    "arguments": [
+      1,
+      2,
+      3
+    ],
+    "outcome": 69
+  },
+  {
+    "arguments1": [
+      6,
+      8,
+      9
+    ],
+    "expected": 79
+  }
+]

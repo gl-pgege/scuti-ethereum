@@ -25,7 +25,7 @@ async function contractSubmissionController(req, res){
     
     try {
         const url = generateGithubDownloadUrl(repoName, commitId);
-    
+        console.log(url);
         const downloadedTarFolderPath = await downloadRepo(url);
 
         const repoTestingDirectory = path.dirname(downloadedTarFolderPath);
@@ -42,10 +42,6 @@ async function contractSubmissionController(req, res){
 
         const score = testResultsToScore;
 
-        try {
-
-        }
-
         res.status(200).json({
             "results": (testResults)
         })
@@ -58,6 +54,7 @@ async function contractSubmissionController(req, res){
         })
     }      
 }
+
 
 module.exports = {
     contractSubmissionController

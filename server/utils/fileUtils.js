@@ -3,6 +3,7 @@ const fs = require('fs');
 const zlib = require('zlib');
 const path = require('path');
 
+
 async function extractCompressedFile(downloadedTarFolderPath, repoTestingDirectory, testFilePath){
     return new Promise((resolve, reject) => {
         let extract = tar.extract();
@@ -75,7 +76,24 @@ function extractFileNameFromPath(path){
     return path.replace(/^.*[\\\/]/, '');
 }
 
+function generateFolderIfNotExist(directoryPath) {
+    try {
+        const dir = path.resolve(directoryPath);    
+        if (!fs.existsSync(directoryPath)) {
+            fs.mkdirSync(directoryPath);
+            return path.resolve(directoryPath);
+        }
+        else {
+            return dir;
+        }
+    }
+    catch(error) {
+        console.log(error.message);
+    }
+}
+
 module.exports = {
     extractCompressedFile,
     extractFileNameFromPath,
+    generateFolderIfNotExist
 }

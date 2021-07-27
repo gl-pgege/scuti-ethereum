@@ -86,7 +86,7 @@ function generateSourceFilesForAllContracts(directory, _sources={}){
 function compileContract(contractPath){
 
     // const version = getSolcVersions(contractPath);
-
+    // TODO: Check filename is equal to contract name and if not, return error with message as to why 
     const contractFileName = extractFileNameFromPath(contractPath);
     const contractName = contractFileName.replace(".sol", "");
 
