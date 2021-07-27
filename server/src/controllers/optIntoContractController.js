@@ -33,14 +33,14 @@ async function optIntoContractController(req, res){
         const addCollaboratorStatus = await addCollaboratorToRepo(addCollaboratorUrl);
 
         // TODO: Check if github Repo creation was successful before responding with the repo.owner.html_url
-    
         res.status(200).json({
             "repositoryUrl": (repoData.owner.html_url)
-        })
+        });
+
     } catch (error) {
         res.status(500).json({
             error: error.message
-        })
+        });
     }
 
 

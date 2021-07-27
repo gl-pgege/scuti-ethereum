@@ -1,15 +1,11 @@
-const path = require("path");
-const fs = require("fs");
-const solc = require("solc");
-const Web3 = require("web3");
-const ganache = require("ganache-cli");
-const _ = require("lodash");
+// const _ = require("lodash");
 const expect = require('chai').expect;
-const { reject } = require("lodash");
 
-const {extractFileNameFromPath} = require("../../utils/fileUtils");
+const web3 = require("../../utils/getWeb3");
+const compileContract = require("../../utils/compile");
 
-const web3 = new Web3(ganache.provider());
+const web3Ganache = web3.ganache();
+
 const GAS = 6700000;
 const GASPRICE = '97000000000';
 
@@ -18,38 +14,6 @@ const transactionTypes = {
     functionCall: "FUNCTION_CALL",
 }
 
-// TODO: Add ability to change compiler versions based on the contract specified compiler versions
-function compileContract(contractPath){
-
-    const contractFileName = extractFileNameFromPath(contractPath);
-    const contractName = contractFileName.replace(".sol", "");
-        
-    const source = fs.readFileSync(contractPath, "utf-8");
-
-    let sources = {}
-
-    sources[contractFileName] = {
-        content: source
-    }
-
-    // needs to adjust to contract name
-    const input = {
-        language: "Solidity",
-        sources: {...sources},
-        settings: {
-            outputSelection: {
-                '*': {
-                    '*': ['*']
-                }
-            }
-        }
-    };
-
-    const compiledContract = JSON.parse(solc.compile(JSON.stringify(input)));
-
-    return compiledContract.contracts[contractFileName][contractName];
-
-}
 
 function generateTxnSendArgumentObj(account, explicitGas, payableAmount=0){
 
@@ -79,10 +43,10 @@ function generateTxnSendArgumentObj(account, explicitGas, payableAmount=0){
     return txnArgumentObj;
 }
 
-async function generateAccountsBasedOnRoles(rolesArray){
+async function generateAccountsBasedOnRoles(web3Instance, rolesArray){
     return new Promise(async (resolve, reject) => {
         try {
-            const userAccounts = await web3.eth.getAccounts();
+            const userAccounts = await web3Instance.eth.getAccounts();
             let accountsObj = {}
         
             rolesArray.forEach((role, index) => {
@@ -96,7 +60,7 @@ async function generateAccountsBasedOnRoles(rolesArray){
     })
 }
 
-async function sendAndCalculateGasUsedForTxn(account, transaction, txnType, explicitGas=false, payableAmount=0){
+async function sendAndCalculateGasUsedForTxn(web3Instance, account, transaction, txnType, explicitGas=false, payableAmount=0){
     
     let sendDetails;
 
@@ -115,11 +79,11 @@ async function sendAndCalculateGasUsedForTxn(account, transaction, txnType, expl
     return new Promise(async (resolve, reject) => {
         
         try {
-            const initialAccountBalance = await web3.eth.getBalance(account);
+            const initialAccountBalance = await web3Instance.eth.getBalance(account);
             const txnReturnValue = await transaction.send({
                 ...sendDetails
             });
-            const finalAccountBalance = await web3.eth.getBalance(account);
+            const finalAccountBalance = await web3Instance.eth.getBalance(account);
             const gasUsed = initialAccountBalance - finalAccountBalance;
 
             resolve({
@@ -179,7 +143,7 @@ function replaceAddressPlaceholdersWithAccounts(funcArguments, availableAccounts
 }
 
 
-async function deployContract(contractPath, constructorSettings, accounts){
+async function deployContract(web3Instance, contractPath, constructorSettings, accounts){
     // Contract compilation needs to adjust to contract name
     const {abi, evm} = compileContract(contractPath);
     const {
@@ -192,13 +156,13 @@ async function deployContract(contractPath, constructorSettings, accounts){
 
     return new Promise( async (resolve, reject) => {
         try {
-            let transaction = await new web3.eth.Contract(abi).deploy({
+            let transaction = await new web3Instance.eth.Contract(abi).deploy({
                 data: `0x${evm.bytecode.object}`,
                 arguments: parsedConstructorArguments,
             })
         
             // deploy smart contract
-            let {gasUsed, txnReturnValue: contract} = await sendAndCalculateGasUsedForTxn(accounts[deploymentAccount], transaction, transactionTypes.deploy, true, constructorPayableAmount);
+            let {gasUsed, txnReturnValue: contract} = await sendAndCalculateGasUsedForTxn(web3Instance, accounts[deploymentAccount], transaction, transactionTypes.deploy, true, constructorPayableAmount);
     
             resolve({
                 gasUsed,
@@ -227,13 +191,15 @@ async function testContract(contractPath, constructorSettings, testCases){
     let gasSpent = 0;
 
     const {accountsNeeded} = constructorSettings;
+
+    const web3Ganache = await web3.ganache();
     
-    const userAccounts = await generateAccountsBasedOnRoles(accountsNeeded);
+    const userAccounts = await generateAccountsBasedOnRoles(web3Ganache, accountsNeeded);
 
     return new Promise(async (resolve, reject) => {
         try{
-        
-            let {gasUsed: deploymentCost, contract: initialContract} = await deployContract(contractPath, constructorSettings, userAccounts)
+            let {gasUsed: deploymentCost, contract: initialContract} = await deployContract(web3Ganache, contractPath, constructorSettings, userAccounts)
+            
             // GAS CALCULATION
             gasSpent += deploymentCost;        
     
@@ -254,10 +220,9 @@ async function testContract(contractPath, constructorSettings, testCases){
                 const parsedArguments = replaceAddressPlaceholdersWithAccounts(arguments, userAccounts);
     
                 if(resetContract){
-                    const {gasUsed: newContractDeploymentCost , contract: newContract} = await deployContract(contractPath, constructorSettings, userAccounts);
+                    const {gasUsed: newContractDeploymentCost , contract: newContract} = await deployContract(web3Ganache, contractPath, constructorSettings, userAccounts);
                     // GAS CALCULATION
                     gasSpent += newContractDeploymentCost;        
-    
                     contract = newContract;
                 }
     
@@ -269,6 +234,7 @@ async function testContract(contractPath, constructorSettings, testCases){
                         await expectThrowsAsync(
                             async function(){
                                 let {gasUsed: failingTransactionCost} = await sendAndCalculateGasUsedForTxn(
+                                    web3Ganache,
                                     userAccounts[account], 
                                     transaction, 
                                     transactionTypes.functionCall, 
@@ -294,11 +260,18 @@ async function testContract(contractPath, constructorSettings, testCases){
                             issue: "expected transaction to revert"
                         })
                     }
+
+                    continue;
                 } else {
                     
-                    let { gasUsed: transactionCost } = await sendAndCalculateGasUsedForTxn(userAccounts[account], transaction, transactionTypes.functionCall, false ,payableAmount);
-                    // GAS CALCULATION
-                    gasSpent += transactionCost;        
+                    try {
+                        let { gasUsed: transactionCost } = await sendAndCalculateGasUsedForTxn(web3Ganache ,userAccounts[account], transaction, transactionTypes.functionCall, false ,payableAmount);
+                        // GAS CALCULATION
+                        gasSpent += transactionCost;        
+                    } catch (error) {
+                        console.log(error.message);
+                    }
+                    
                 }
     
                 let actualOutput = await contract.methods[valueToCheck]().call()
@@ -335,6 +308,21 @@ async function testContract(contractPath, constructorSettings, testCases){
     })
 }
 
+// TODO: Find more creative ways to score repositories
+function testResultsToScore(results){
+    
+    const {
+        failed,
+        gasUsed
+    } = results;
+
+    const testScore = gasUsed + failed
+
+    return testScore;
+    
+}
+
 module.exports = {
-    testContract
+    testContract,
+    testResultsToScore,
 }

@@ -70,7 +70,7 @@ function recursivelyAddAllImports(filePath, sourcesPropertyName, _sources={}, pr
 
 function generateSourceFilesForAllContracts(directory, _sources={}){
 
-    const sources = {..._sources};
+    let sources = {..._sources};
 
     const filePaths = parseRootDirectoryForSolidityFiles(directory)
 

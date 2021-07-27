@@ -1,6 +1,9 @@
 const path = require('path');
 const { extractCompressedFile } = require("../../utils/fileUtils");
-const {testContract} = require("../utils/testHarness");
+const {
+    testContract,
+    testResultsToScore
+} = require("../utils/testHarness");
 const {
     contestConstructorDetails,
     contestTestJsonObject
@@ -37,11 +40,19 @@ async function contractSubmissionController(req, res){
             testResults = await testContract(testFileLocation, contestConstructorDetails, contestTestJsonObject);
         }
 
+        const score = testResultsToScore;
+
+        try {
+
+        }
+
         res.status(200).json({
             "results": (testResults)
         })
 
     } catch (error) {
+
+        console.log(error);
         res.status(500).json({
             error: error.message
         })
