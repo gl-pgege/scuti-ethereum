@@ -2,14 +2,7 @@ const fs = require('fs');
 const uuid = require('uuid');
 const { generateFolderIfNotExist } = require('../../utils/fileUtils');
 const path = require('path');
-
-//TODO: move this to a utils file and export / import 
-function validGithubID(GithubID, ContestName) {
-    if ((GithubID.match(/\s/g)) || !GithubID || !ContestName) {
-        return false;
-    }
-    return true;
-}
+const { validGithubID } = require('../../utils/github');
 
 async function testCaseSubmissionController (req, res) {
     

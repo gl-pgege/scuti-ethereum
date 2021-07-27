@@ -111,11 +111,19 @@ async function addCollaboratorToRepo(url){
     })
 }
 
+function validGithubID(GithubID, ContestName) {
+    if ((GithubID.match(/\s/g)) || !GithubID || !ContestName) {
+        return false;
+    }
+    return true;
+}
+
 module.exports = {
     generateAddCollaboratorToRepoUrl,
     generateGithubCreateRepoFromTemplateUrl,
     createGithubRepoFromTemplate,
     generateGithubDownloadUrl,
     downloadRepo,
-    addCollaboratorToRepo
+    addCollaboratorToRepo,
+    validGithubID
 }
