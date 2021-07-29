@@ -93,7 +93,6 @@ contract Contest {
             leaderAddress = address(0);
             leaderScore = 100;
             // THOUGHTS: WE CAN OPTIONALLY RESET THE OWNER TO A ZERO ADDRESS TO END THE CONTRACT
-            
         }
     }
     // TODO: need to update all winnerWithdrawal() uses with transferFunds()

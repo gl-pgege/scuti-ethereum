@@ -321,7 +321,7 @@
                 "signature": "0x64c3c166"
             }
         ],
-        "address": "0x8545d2BF787BE25B4786C61a75D36262FFc64EAb"
+        "address": "0xfC1B8646761AC48B76E25a4B0d8253A22d333b71"
     },
     "Contest.sol-gorliTestNet": {
         "abi": [
@@ -336,6 +336,11 @@
                         "internalType": "uint256",
                         "name": "_contractAmount",
                         "type": "uint256"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "_goodlabsAddress",
+                        "type": "address"
                     }
                 ],
                 "stateMutability": "nonpayable",
@@ -434,6 +439,19 @@
             },
             {
                 "inputs": [],
+                "name": "goodlabsAddress",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
                 "name": "leaderAddress",
                 "outputs": [
                     {
@@ -480,7 +498,7 @@
             },
             {
                 "inputs": [],
-                "name": "winnerWithdrawal",
+                "name": "transferFunds",
                 "outputs": [],
                 "stateMutability": "nonpayable",
                 "type": "function"

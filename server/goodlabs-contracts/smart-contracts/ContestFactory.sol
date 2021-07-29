@@ -31,7 +31,7 @@ contract ContestFactory {
             to pass data provided to us by the user in order to allow different
             contract configurations per user
         */
-        address newCampaignAddress = address(new Contest(msg.sender, contractAmount));
+        address newCampaignAddress = address(new Contest(msg.sender, contractAmount, address(0x90586fdcC1c3F260d790F418cE103120aBA6B933)));
 
         ContestData memory campaign = ContestData(campaignId, newCampaignAddress, contractOwnerId, msg.sender);
         
