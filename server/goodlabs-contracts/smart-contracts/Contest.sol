@@ -72,10 +72,10 @@ contract Contest {
     }
 
     // allowing developers to submit their score in order to determine if they're the current leaders
-    function contractSubmission(uint score) public contractIsFunded notOwner beforeEndTime{
+    function contractSubmission(uint256 score) public contractIsFunded notOwner beforeEndTime{
         if(score < leaderScore){
-        leaderScore = score;
-        leaderAddress = msg.sender;
+            leaderScore = score;
+            leaderAddress = msg.sender;
         }
     }
     

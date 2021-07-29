@@ -1,6 +1,6 @@
 pragma solidity 0.6.12;
 
-contract Contests {
+contract Contest {
     address public owner;
 
     uint public endTime;
@@ -55,16 +55,12 @@ contract Contests {
         leaderScore = 100;
     }
     
-    function getOwner() public view returns(address) {
-        return msg.sender;
-    }
-    
     function currentTime() public view returns(uint){
         return block.timestamp;
     }
     
     // allowing developers to submit their score in order to determine if they're the current leaders
-    function contractSubmission(uint score) public contractIsFunded notOwner beforeEndTime{
+    function contractSubmission(uint score) public contractIsFunded notOwner{
         if(score < leaderScore){
         leaderScore = score;
         leaderAddress = msg.sender;
@@ -97,6 +93,4 @@ contract Contests {
             // THOUGHTS: WE CAN OPTIONALLY RESET THE OWNER TO A ZERO ADDRESS TO END THE CONTRACT
         }
     }
-}  
-
- 
+}

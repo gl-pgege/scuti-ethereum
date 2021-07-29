@@ -43,10 +43,10 @@ async function downloadRepo(url){
             if (response.ok) {
                 const data = await response.buffer();
         
-                const folderPath = path.resolve(__dirname, '..', "src", 'contracts');
+                const folderPath = await generateFolderIfNotExist(path.resolve(__dirname, '..', "src", 'contracts'));
                 
-                compressedRepoPath = path.resolve(generateFolderIfNotExist(folderPath), 'contract.tar.gz');
-                console.log(compressedRepoPath);
+                compressedRepoPath = path.resolve(folderPath, 'contract.tar.gz');
+
                 fs.createWriteStream(compressedRepoPath).write(data);
                 
                 resolve(compressedRepoPath);

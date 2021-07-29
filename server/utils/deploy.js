@@ -1,6 +1,6 @@
 const compileContract = require("./compile");
 
-async function deployContract(web3Wrapper, contractPath, contractOwner, constructorSettings={}, _gas=6700000, _gasPrice=0){
+async function deployContract(web3Wrapper, contractPath, contractOwner, constructorSettings={}, _gas=4700000, _gasPrice="30000000000"){
     
     // Contract compilation needs to adjust to contract name
     const {abi, evm} = compileContract(contractPath);

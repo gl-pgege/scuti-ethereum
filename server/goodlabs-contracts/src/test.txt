@@ -1,0 +1,128 @@
+{
+  abi: [
+    {
+      inputs: [Array],
+      name: 'createCampaign',
+      outputs: [],
+      stateMutability: 'nonpayable',
+      type: 'function',
+      constant: undefined,
+      payable: undefined,
+      signature: '0xffa56a57'
+    },
+    {
+      inputs: [Array],
+      name: 'deployedCampaigns',
+      outputs: [Array],
+      stateMutability: 'view',
+      type: 'function',
+      constant: true,
+      payable: undefined,
+      signature: '0x339d50a5'
+    },
+    {
+      inputs: [],
+      name: 'getContestCount',
+      outputs: [Array],
+      stateMutability: 'view',
+      type: 'function',
+      constant: true,
+      payable: undefined,
+      signature: '0x64c3c166'
+    }
+  ],
+  address: '0xd893Fdf293960B739fd478f1F57f266dcae87359'
+}
+{
+  abi: [
+    {
+      inputs: [Array],
+      stateMutability: 'nonpayable',
+      type: 'constructor'
+    },
+    {
+      inputs: [Array],
+      name: 'beginContract',
+      outputs: [],
+      stateMutability: 'payable',
+      type: 'function'
+    },
+    {
+      inputs: [],
+      name: 'contractAmount',
+      outputs: [Array],
+      stateMutability: 'view',
+      type: 'function'
+    },
+    {
+      inputs: [],
+      name: 'contractFunded',
+      outputs: [Array],
+      stateMutability: 'view',
+      type: 'function'
+    },
+    {
+      inputs: [Array],
+      name: 'contractSubmission',
+      outputs: [],
+      stateMutability: 'nonpayable',
+      type: 'function'
+    },
+    {
+      inputs: [],
+      name: 'currentTime',
+      outputs: [Array],
+      stateMutability: 'view',
+      type: 'function'
+    },
+    {
+      inputs: [],
+      name: 'endTime',
+      outputs: [Array],
+      stateMutability: 'view',
+      type: 'function'
+    },
+    {
+      inputs: [],
+      name: 'getAddressZero',
+      outputs: [Array],
+      stateMutability: 'view',
+      type: 'function'
+    },
+    {
+      inputs: [],
+      name: 'leaderAddress',
+      outputs: [Array],
+      stateMutability: 'view',
+      type: 'function'
+    },
+    {
+      inputs: [],
+      name: 'leaderScore',
+      outputs: [Array],
+      stateMutability: 'view',
+      type: 'function'
+    },
+    {
+      inputs: [],
+      name: 'owner',
+      outputs: [Array],
+      stateMutability: 'view',
+      type: 'function'
+    },
+    {
+      inputs: [],
+      name: 'ownerWithdrawal',
+      outputs: [],
+      stateMutability: 'nonpayable',
+      type: 'function'
+    },
+    {
+      inputs: [],
+      name: 'winnerWithdrawal',
+      outputs: [],
+      stateMutability: 'nonpayable',
+      type: 'function'
+    }
+  ]
+}
