@@ -1,5 +1,7 @@
 pragma solidity 0.6.12;
 
+import "./Contest.sol";
+
 contract ContestFactory {
 
     struct ContestData {

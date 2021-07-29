@@ -1,10 +1,10 @@
 // const _ = require("lodash");
 const expect = require('chai').expect;
-
-const web3 = require("../../utils/getWeb3");
+const ganache = require("ganache-cli")
+const Web3 = require("web3");
 const compileContract = require("../../utils/compile");
 
-const web3Ganache = web3.ganache();
+const web3Ganache = new Web3(ganache.provider());
 
 const GAS = 6700000;
 const GASPRICE = '97000000000';
@@ -178,8 +178,8 @@ async function deployContract(web3Instance, contractPath, constructorSettings, a
 
 function generateTestResults(passedTests, failedTests, gasSpent){
     return {
-        pass: passedTests.length,
-        fail: failedTests.length,
+        passed: passedTests.length,
+        failed: failedTests.length,
         failedTests,
         gasUsed: gasSpent
     }
@@ -192,8 +192,6 @@ async function testContract(contractPath, constructorSettings, testCases){
     let gasSpent = 0;
 
     const {accountsNeeded} = constructorSettings;
-
-    const web3Ganache = await web3.ganache();
     
     const userAccounts = await generateAccountsBasedOnRoles(web3Ganache, accountsNeeded);
 
@@ -317,10 +315,9 @@ function testResultsToScore(results){
         gasUsed
     } = results;
 
-    const testScore = gasUsed + failed
+    const testScore = gasUsed + failed;
 
-    return testScore;
-    
+    return testScore;    
 }
 
 module.exports = {
