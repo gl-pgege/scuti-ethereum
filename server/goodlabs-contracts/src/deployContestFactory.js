@@ -7,6 +7,7 @@ const web3 = require("../../utils/getWeb3");
 const deployContract = require("../../utils/deploy");
 const { isSupportedNetwork } = require("../../utils/blockchain");
 const compileContract = require("../../utils/compile");
+const { NETWORKS } = require("../../constants/blockchain");
 
 
 async function deployContractToChain(contractName, network, constructorSettings={}, saveAddress=true, gas=4700000, gasPrice=0){
@@ -68,8 +69,8 @@ async function deployContractToChain(contractName, network, constructorSettings=
 }
 
 async function main(){
-    console.log(await deployContractToChain("ContestFactory.sol", "gorliTestNet"));
-    console.log(await deployContractToChain("Contest.sol", "gorliTestNet"));
+    console.log(await deployContractToChain("ContestFactory.sol", NETWORKS.GORLI));
+    console.log(await deployContractToChain("Contest.sol", NETWORKS.GORLI));
 }
 
 main()

@@ -20,7 +20,7 @@ async function createContestOnNetwork(network){
             from: accounts[0],
         });
     
-        return await contract.methods.deployedCampaigns(1).call();
+        return await contract.methods.deployedCampaigns(0).call();
     } catch (error) {
         console.log(error.message);
     }
