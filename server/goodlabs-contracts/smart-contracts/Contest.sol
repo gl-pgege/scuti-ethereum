@@ -8,6 +8,8 @@ contract Contest {
     uint public leaderScore;
     address public leaderAddress;
 
+    address public goodlabsAddress;
+
     // for contract to be started you need to have contract amount > 0
     bool public contractFunded = false;
     uint public contractAmount;
@@ -48,11 +50,17 @@ contract Contest {
         _;
     }
 
+    modifier onlyGoodlabs() {
+        require(msg.sender == goodlabsAddress);
+        _;
+    }
+
     // constructor that ensures the contract owner funds the contract on deployment
-    constructor(address _owner, uint _contractAmount) public{
+    constructor(address _owner, uint _contractAmount, address _goodlabsAddress) public{
         owner = _owner;
         contractAmount = _contractAmount;
         leaderScore = 100;
+        goodlabsAddress = _goodlabsAddress;
     }
 
     function getAddressZero() public view returns(address) {
@@ -78,15 +86,17 @@ contract Contest {
     }
     
     // only winner can withdraw funds
-    function winnerWithdrawal() public pastEndTime onlyLeader{        
-        if(payable(msg.sender).send(contractAmount)){
+    function transferFunds() public pastEndTime onlyGoodlabs {     
+        if(payable(leaderAddress).send(contractAmount)){
             contractAmount -= contractAmount;
             contractFunded = false;
             leaderAddress = address(0);
             leaderScore = 100;
             // THOUGHTS: WE CAN OPTIONALLY RESET THE OWNER TO A ZERO ADDRESS TO END THE CONTRACT
+            
         }
     }
+    // TODO: need to update all winnerWithdrawal() uses with transferFunds()
     
     function ownerWithdrawal() public onlyOwner ownerWithdrawalValidation{
         if(payable(msg.sender).send(contractAmount)){
