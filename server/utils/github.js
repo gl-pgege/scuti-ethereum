@@ -118,6 +118,30 @@ function validGithubID(GithubID, ContestName) {
     return true;
 }
 
+// //TODO: owner name needs to be changed to goodlabs github ID, token needs to be changed to goodlabs auth token
+// function githubRepoTransfer (repoName, newOwnerID, res) {
+//     const url =`https://api.github.com/repos/ddang/${repoName}/transfer` 
+//     const authHeader ="token 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" 
+//     const new_owner = {
+//         new_owner: newOwnerID
+//     }
+
+//     const options = {
+//         method: "post",
+//         body: JSON.stringify(new_owner),
+//         headers: {
+//             Accept: "application/vnd.github.v3+json",
+//             Authorization: authHeader
+//         }
+//     };
+
+//     fetch(url, options)
+//         .then( res => res.json() )
+//         .then( data => {
+//             res.json({ msg: 'Github Repo transfer request was sent.' });
+//     });
+// }
+
 module.exports = {
     generateAddCollaboratorToRepoUrl,
     generateGithubCreateRepoFromTemplateUrl,

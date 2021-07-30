@@ -1,94 +1,84 @@
-const path = require('path');
+const fetch = require('node-fetch');
 const fs = require('fs');
-const Web3 = require('web3');
+let deployedContracts = require('../../goodlabs-contracts/abi/deployedContracts');
+const web3 = require('../../utils/getWeb3');
+
 
 async function githubRepoController (req, res) {
-
-    
-
-
-
-    // const web3 = new Web3(ganache.provider());
-
-    // const contractPath = path.resolve(__dirname, '..', '..', 'goodlabs-contracts', 'smart-contracts', 'Contest.sol');
-    
-    // const sourceCode = fs.readFileSync(contractPath, 'utf-8');
-
-    // var input = {
-    //     language: 'Solidity',
-    //     sources: {
-    //     'Contest.sol': {
-    //         content: sourceCode
-    //     }
-    //     },
-    //     settings: {
-    //     outputSelection: {
-    //         '*': {
-    //         '*': ['*']
-    //         }
-    //     }
-    //     }
-    // };
-    
-    // var output = JSON.parse(solc.compile(JSON.stringify(input)));
-
-    // const contractObject = output.contracts['Contest.sol'].Contest;
-
-    // const {abi, evm} = contractObject;
-
-    // const byteCode = '0x' + evm.bytecode.object;    // 0x for hex
-
-    // const setContractAmount = 1000000000000000;
-
-    // const compileCode = async() => {
-    //     try {
-    //         const accounts = await web3.eth.getAccounts();
-    //         const gasEstimate = await web3.eth.estimateGas({
-    //             from: accounts[0]
-    //         })
-    //         const contract = await new web3.eth.Contract(abi).deploy({
-    //             data: byteCode,
-    //             arguments: [accounts[0], setContractAmount, accounts[9]]    // setting accounts[9] to goodlabs
-    //         }).send({
-    //             from: accounts[0], 
-    //             gas: 6700000,
-    //             gasPrice: gasEstimate
-    //         })
-    //         return contract;
-    //     }
-    //     catch(error) {
-    //         console.log(error.message);
-    //     }
-    // };
-    
-    // let contract;
-    // let accounts;
-    // let ownerAddress;
-    // let leaderAddress;
-    // let score;
-    // let endTime;
-    // let beginContract;
-    // let contractSubmission;
-    // let goodlabsAddress;
-    // let transfer;
-    // (async function() {
-    //     contract = await compileCode();
-    //     accounts = await web3.eth.getAccounts();
-    //     ownerAddress = accounts[0];
-    //     leaderAddress = accounts[1];
-    //     goodlabsAddress = accounts[9];
-    //     endTime = parseInt(await contract.methods.currentTime().call()) + 3; 
-    //     beginContract = await contract.methods.beginContract(endTime).send({from: ownerAddress, value: setContractAmount});
-    //     score = 60; // to ensure leader address is updated
-    //     contractSubmission = await contract.methods.contractSubmission(score).send({from: leaderAddress});
-    //     // console.log(goodlabsAddress);
-    //     // web3.eth.getBalance(leaderAddress).then(console.log);
-    //     transfer = await contract.methods.transferFunds().send({from: goodlabsAddress});
-    //     // web3.eth.getBalance(leaderAddress).then(console.log);
+    // call transferFunds at the route
+    // surround in try/catch
+    try {
+        const transferInformation = {
+            Address,
+            RepoName,
+            ContractOwnerGithubID,
+            Network
+        } = req.body;
         
+        const providerName = `Contest.sol-${Network}`;
+        let contractAmount;
+        // abi from deployedContracts.json
+        const abi = deployedContracts[providerName].abi;
 
+        // getting contract methods / variables from the contractInstance
+        const web3Instance = await web3[Network]();
+        const contractInstance = new web3Instance.eth.Contract(abi, Address);
 
-    // })();
+        // contractAmount = await contractInstance.methods.contractAmount().call();
+        // console.log(`Before - ${contractAmount}`);
+        // calling the transferFunds from the goodlabsAddress 
+        let goodlabsAddress = await contractInstance.methods.goodlabsAddress().call();
+        
+        try {
+            const transfer = await contractInstance.methods.transferFunds().send({from: goodlabsAddress});
+
+            let contractAmountAfter;
+            // checking if the contractAmount was reset to 0, in which case the transaction was successful
+            contractAmountAfter = await contractInstance.methods.contractAmount().call();
+            // console.log(`After - ${contractAmountAfter}`);
+            let fundsTransferred = false;
+            if (contractAmountAfter == 0) {
+                fundsTransferred = true;
+            }
+            else {
+                fundsTransferred = false;
+            }
+            
+            if (fundsTransferred) {
+                
+                // TODO: turn this into a function
+                const url =`https://api.github.com/repos/dangvid/${RepoName}/transfer` //owner name needs to be changed to goodlabs github ID
+                const authHeader ="token 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" //token needs to be changed to goodlabs auth token
+                const new_owner = {
+                    new_owner: ContractOwnerGithubID    
+                }
+
+                const options = {
+                    method: "post",
+                    body: JSON.stringify(new_owner),
+                    headers: {
+                        Accept: "application/vnd.github.v3+json",
+                        Authorization: authHeader
+                    }
+                };
+
+                fetch(url, options)
+                    .then( res => res.json() )
+                    .then( data => {
+                        res.json({ msg: 'Github Repo transfer request was sent.' });
+                });
+            }
+            else {
+                res.status(200).json({ msg: 'Funds have not yet been transferred to the leader.' });
+            }
+        }
+        catch(error) {
+            res.status(400).json({ msg: 'Funds cannot be transferred until the end time has passed.' });
+        }
+    }
+    catch(error) {
+        res.status(400).json({ msg: error.message });
+    }
 
 };
 
