@@ -20,11 +20,13 @@ contract VerifySignature {
     
     /*
         1. Deploy contract with MetaMask injected Web3
-        2. Enter amount into getMessageHash to create hash
-        3. Open Javascript console and assign the hash to a variable
-        4. Assign the account address of the signer to a variable
+        2. Deposit amount and MetaMask will confirm action
+        3. Locate hash in the emit logs and then open up Javascript console and assign the variable 'hash' to that hash
+        4. Assign the 'account' address of the signer to a variable
         5. account = address of signer
-           ethereum.request({ method: "personal_sign", params: [account, hash]}).then(console.log) will output a signature
+        Then call 
+           ethereum.request({ method: "personal_sign", params: [account, hash]}).then(console.log)
+        This will output a signature.
            or via web3: 
            web3.personal.sign(hash, addressOfSigner, callback(err, result) {
              if (err) {
