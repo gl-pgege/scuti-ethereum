@@ -25,11 +25,13 @@ contract Contest {
         _;
     }
     
+    // Might need to do the timestamp outside the blockchain - block.timestamp is unreliable
     modifier pastEndTime(){
         require(block.timestamp > endTime);
         _;
     }
     
+    // Might need to do the timestamp outside the blockchain - block.timestamp is unreliable
     modifier beforeEndTime(){
         require(block.timestamp < endTime);
         _;
@@ -46,6 +48,7 @@ contract Contest {
     }
     
     modifier ownerWithdrawalValidation(){
+        // Might need to do the timestamp outside the blockchain - block.timestamp is unreliable
         require(leaderAddress == address(0) || (leaderAddress == address(0) && block.timestamp > endTime));
         _;
     }
@@ -63,7 +66,7 @@ contract Contest {
         goodlabsAddress = _goodlabsAddress;
     }
 
-    function getAddressZero() public view returns(address) {
+    function getAddressZero() public pure returns(address) {
         return address(0);
     }
 
@@ -87,25 +90,15 @@ contract Contest {
     
     // only winner can withdraw funds
     function transferFunds() public pastEndTime onlyGoodlabs {     
-        if(payable(leaderAddress).send(contractAmount)){
-            contractAmount -= contractAmount;
-            contractFunded = false;
-            leaderAddress = address(0);
-            leaderScore = 100;
-            // THOUGHTS: WE CAN OPTIONALLY RESET THE OWNER TO A ZERO ADDRESS TO END THE CONTRACT
-        }
+        contractAmount -= contractAmount;
+        contractFunded = false;
+        payable(leaderAddress).transfer(contractAmount);
     }
-    // TODO: need to update all winnerWithdrawal() uses with transferFunds()
     
+    // TODO: need to update all winnerWithdrawal() uses with transferFunds()
     function ownerWithdrawal() public onlyOwner ownerWithdrawalValidation{
-        if(payable(msg.sender).send(contractAmount)){
-            contractAmount -= contractAmount;
-            contractFunded = false;
-            leaderAddress = address(0);
-            leaderScore = 100;
-            // THOUGHTS: WE CAN OPTIONALLY RESET THE OWNER TO A ZERO ADDRESS TO END THE CONTRACT
-        }
+        contractAmount -= contractAmount;
+        contractFunded = false;
+        payable(owner).transfer(contractAmount);
     }
-}  
-
- 
+}
