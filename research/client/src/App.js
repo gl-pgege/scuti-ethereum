@@ -23,7 +23,7 @@ function App(){
         // Use web3 to get the user's accounts.
         const initial_accounts = await web3_instance.eth.getAccounts();
         console.log(initial_accounts);
-  
+
         // Get the contract instance.
         const networkId = await web3_instance.eth.net.getId();
         const deployedNetwork = Contest.networks[networkId];
@@ -78,11 +78,13 @@ function App(){
 
   async function retrieveScore(){
     try {
-      // Get the value from the contract to prove it worked.
-      const response = await contract.methods.getLeaderScore().call();
-      console.log(response);
-      // Update state with the result.
-      setStorageValue(response);
+
+      await web3.eth.sendTransaction({to:"0xbb8eAFcD5502a0a6BA2a353f03eb3AB28049DD7A", from:"0x578688bB42919b9eEfa011bc0192BF9D4Eaf491E", value: web3.utils.toWei("1", "ether")})
+      // // Get the value from the contract to prove it worked.
+      // const response = await contract.methods.getLeaderScore().call();
+      // console.log(response);
+      // // Update state with the result.
+      // setStorageValue(response);
     } catch(error){
       console.log(error);
     }

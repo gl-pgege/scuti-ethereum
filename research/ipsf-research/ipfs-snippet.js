@@ -14,10 +14,11 @@ const addFile = async (fileName, filePath) => {
 };
 
 async function main() {
-    const fileName = "testFile.json";
-    const testFilePath = path.resolve(".", fileName);
+    const testFile = "testFile.json";
+    const testFilePath = path.resolve(".", testFile);
 
-    const cid = await addFile(fileName, testFilePath)
+    // CID is the content identifier - the fingerprint for our content after it's been hashed
+    const cid = await addFile(testFile, testFilePath)
     console.log(cid);
 }
 
